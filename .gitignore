@@ -1,0 +1,11 @@
+*.pyc
+*.swp
+*.swo
+*.sass-cache
+*.codekit
+*db.sqlite3
+*.DS_Store
+*._*
+.vagrant
+.log
+data/
