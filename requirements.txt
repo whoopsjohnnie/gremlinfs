@@ -1,0 +1,6 @@
+
+futures
+fusepy==3.0.1
+# gremlinpython==3.4.2
+# gremlinpython==3.3.0
+gremlinpython==3.3.2

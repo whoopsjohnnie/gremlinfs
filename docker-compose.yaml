@@ -1,0 +1,63 @@
+version: '3'
+services:
+
+  orientdb:
+    # image: orientdb:3.0.21
+    image: orientdb:3.0.21-tp3
+    command: server.sh
+    volumes:
+      # - ./config/orientdb/config:/orientdb/config
+      - ./data/orientdb/databases:/orientdb/databases
+    environment:
+      ORIENTDB_ROOT_PASSWORD: root
+    ports:
+      - 2424:2424
+      - 2480:2480
+      # OpenDB Gremlin, if using -tp3 images
+      - 8182:8182
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    hostname: "rabbitmq"
+    environment:
+      # RABBITMQ_ERLANG_COOKIE: 
+      RABBITMQ_DEFAULT_USER: "rabbitmq"
+      RABBITMQ_DEFAULT_PASS: "rabbitmq"
+      RABBITMQ_DEFAULT_VHOST: "/"
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    labels:
+      NAME: "rabbitmq"
+
+  # https://github.com/mitre/fusera/wiki/FUSE-and-Docker
+  gremlinfs:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - "./:/app"
+      - "./srcpoint:/app/srcpoint"
+    environment:
+      MOUNT_POINT: /tmp/mntpoint
+      GREMLIN_HOST: "orientdb"
+      GREMLIN_PORT: "8182"
+      GREMLIN_USERNAME: "root"
+      GREMLIN_PASSWORD: "root"
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_PORT: "15672"
+      # RABBITMQ_USERNAME: ""
+      # RABBITMQ_PASSWORD: ""
+    privileged: true
+    cap_add: 
+      - SYS_ADMIN
+      - MKNOD
+    devices:
+      - "/dev/fuse:/dev/fuse"
+    restart: on-failure
+    depends_on:
+      - orientdb
+      - rabbitmq
+    links:
+      - orientdb
+      - rabbitmq
