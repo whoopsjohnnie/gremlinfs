@@ -1,0 +1,1316 @@
+diff --git a/Dockerfile b/Dockerfile
+new file mode 100644
+index 0000000..bf50c0e
+--- /dev/null
++++ b/Dockerfile
+@@ -0,0 +1,43 @@
++
++FROM python:2.7
++
++
++# 
++# docker build -t gremlinfs:latest .
++# docker run --rm -it --privileged --cap-add SYS_ADMIN --cap-add MKNOD --device /dev/fuse gremlinfs:latest
++# 
++
++
++ENV NAME GFS_FS_NAME
++ENV NAME GFS_FS_MOUNT
++
++
++ENV NAME GREMLIN_HOST
++ENV NAME GREMLIN_PORT
++ENV NAME GREMLIN_USERNAME
++ENV NAME GREMLIN_PASSWORD
++
++
++ENV NAME RABBITMQ_HOST
++ENV NAME RABBITMQ_PORT
++ENV NAME RABBITMQ_USERNAME
++ENV NAME RABBITMQ_PASSWORD
++
++
++# Update and upgrade the software
++RUN apt-get update -y --allow-unauthenticated
++RUN apt-get upgrade -y --allow-unauthenticated
++
++# Install FUSE
++RUN apt-get install sshfs -y --allow-unauthenticated
++RUN apt-get install libfuse-dev -y --allow-unauthenticated
++
++ADD ./ /app
++
++WORKDIR /app
++
++RUN pip install -r ./requirements.txt
++RUN pip install -U fusepy
++
++# CMD mkdir -p /tmp/mntpoint && python /app/gremlinfs.py /tmp/mntpoint
++CMD ["/app/bin/bootstrap.sh"]
+diff --git a/Dockerfile.theia b/Dockerfile.theia
+index ff858ef..eb07a82 100644
+--- a/Dockerfile.theia
++++ b/Dockerfile.theia
+@@ -1,3 +1,5 @@
++
++# FROM python:2.7
+ FROM theiaide/theia:latest
+ 
+ USER root
+@@ -19,12 +21,20 @@ RUN apk add --update \
+     sshfs \
+     fuse-dev
+ 
++# RUN modprobe fuse
++
+ ADD ./ /app
+ 
+ WORKDIR /app
+ 
+-# Addl. python 
+ RUN pip install -r ./requirements.txt
+ RUN pip install -U fusepy
+ 
+-ENTRYPOINT ["/app/bin/bootstrap.sh"]
++# RUN whoami
++# RUN ls -al /dev/fuse
++# RUN chmod a+rwx /dev/fuse
++
++# USER theia& 
++
++# ENTRYPOINT [ "node", "/home/theia/src-gen/backend/main.js", "/home/project", "--hostname=0.0.0.0" ]
++ENTRYPOINT ["/app/bin/bootstrap.theia.sh"]
+diff --git a/bin/bootstrap.sh b/bin/bootstrap.sh
+index a42c551..b0ba0b6 100755
+--- a/bin/bootstrap.sh
++++ b/bin/bootstrap.sh
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-set -x
++# set -x
+ 
+ 
+ echo ${GFS_FS_NAME}
+@@ -20,32 +20,29 @@ echo ${RABBITMQ_PORT}
+ 
+ 
+ 
+-# 
+-# MQ Health Check
+-# 
+-# https://stackoverflow.com/questions/31746182/docker-compose-wait-for-container-x-before-starting-y/41854997#41854997
+-mqtries=10
+-for i in `seq 1 $mqtries`
+-do
+-	# echo "$i"
++# # 
++# # MQ Health Check
++# # 
++# # https://stackoverflow.com/questions/31746182/docker-compose-wait-for-container-x-before-starting-y/41854997#41854997
++# mqtries=10
++# for i in `seq 1 $mqtries`
++# do
++# 	# echo "$i"
+ 
+-	mqstatus=$(curl -s -o /dev/null -w "%{http_code}" http://${RABBITMQ_HOST}:${RABBITMQ_PORT})
+-	if [ "$mqstatus" -eq 0 ]; then
+-		echo " *** RABBITMQ CONNECTION FAILED "
+-		sleep 2
+-	else
+-		echo " *** RABBITMQ CONNECTION SUCCEEDED "
+-		break
+-	fi
++# 	mqstatus=$(curl -s -o /dev/null -w "%{http_code}" http://${RABBITMQ_HOST}:${RABBITMQ_PORT})
++# 	if [ "$mqstatus" -eq 0 ]; then
++# 		echo " *** RABBITMQ CONNECTION FAILED "
++# 		sleep 2
++# 	else
++# 		echo " *** RABBITMQ CONNECTION SUCCEEDED "
++# 		break
++# 	fi
+ 
+-done
++# done
+ 
+ 
++cd /app
+ 
+-adduser theia sudo
+-adduser theia fuse
++mkdir -p ${GFS_FS_MOUNT}
+ 
+-sudo chmod a+rwx /dev/fuse
+-
+-# su theia 
+-sudo -E -u theia /app/bin/launch.sh
++python /app/gremlinfs.py ${GFS_FS_MOUNT} ${GREMLIN_HOST} ${GREMLIN_PORT} ${GREMLIN_USERNAME} ${GREMLIN_PASSWORD} ${RABBITMQ_HOST} ${RABBITMQ_PORT} ${RABBITMQ_USERNAME} ${RABBITMQ_PASSWORD}
+diff --git a/bin/bootstrap.theia.sh b/bin/bootstrap.theia.sh
+new file mode 100755
+index 0000000..913882a
+--- /dev/null
++++ b/bin/bootstrap.theia.sh
+@@ -0,0 +1,51 @@
++#!/bin/sh
++
++set -x
++
++
++echo ${GFS_FS_NAME}
++echo ${GFS_FS_MOUNT}
++
++
++echo ${GREMLIN_HOST}
++echo ${GREMLIN_PORT}
++# echo ${GREMLIN_USERNAME}
++# echo ${GREMLIN_PASSWORD}
++
++
++echo ${RABBITMQ_HOST}
++echo ${RABBITMQ_PORT}
++# echo ${RABBITMQ_USERNAME}
++# echo ${RABBITMQ_PASSWORD}
++
++
++
++# 
++# MQ Health Check
++# 
++# https://stackoverflow.com/questions/31746182/docker-compose-wait-for-container-x-before-starting-y/41854997#41854997
++mqtries=10
++for i in `seq 1 $mqtries`
++do
++	# echo "$i"
++
++	mqstatus=$(curl -s -o /dev/null -w "%{http_code}" http://${RABBITMQ_HOST}:${RABBITMQ_PORT})
++	if [ "$mqstatus" -eq 0 ]; then
++		echo " *** RABBITMQ CONNECTION FAILED "
++		sleep 2
++	else
++		echo " *** RABBITMQ CONNECTION SUCCEEDED "
++		break
++	fi
++
++done
++
++
++
++adduser theia sudo
++adduser theia fuse
++
++sudo chmod a+rwx /dev/fuse
++
++# su theia 
++sudo -E -u theia /app/bin/launch.theia.sh
+diff --git a/bin/launch.sh b/bin/launch.theia.sh
+similarity index 100%
+rename from bin/launch.sh
+rename to bin/launch.theia.sh
+diff --git a/docker-compose.theia.yaml b/docker-compose.theia.yaml
+new file mode 100644
+index 0000000..065628b
+--- /dev/null
++++ b/docker-compose.theia.yaml
+@@ -0,0 +1,75 @@
++version: '3'
++services:
++
++  orientdb:
++    # image: orientdb:3.0.21
++    # image: orientdb:3.0.21-tp3
++    build:
++      context: ./
++      dockerfile: Dockerfile.orientdb
++    command: server.sh
++    volumes:
++      # - ./config/orientdb/config:/orientdb/config
++      - ./config/orientdb/config/gremlin-server.yaml:/orientdb/config/gremlin-server.yaml
++      - ./data/orientdb/databases:/orientdb/databases
++    environment:
++      ORIENTDB_ROOT_PASSWORD: root
++    ports:
++      - 2424:2424
++      - 2480:2480
++      # OpenDB Gremlin, if using -tp3 images
++      - 8182:8182
++
++  rabbitmq:
++    image: "rabbitmq:3-management"
++    hostname: "rabbitmq"
++    environment:
++      # RABBITMQ_ERLANG_COOKIE: 
++      RABBITMQ_DEFAULT_USER: "rabbitmq"
++      RABBITMQ_DEFAULT_PASS: "rabbitmq"
++      RABBITMQ_DEFAULT_VHOST: "/"
++    ports:
++      - "15672:15672"
++      - "5672:5672"
++    labels:
++      NAME: "rabbitmq"
++
++  # docker run -it -p 3000:3000 -v "$(pwd):/home/project:cached" theiaide/theia:next
++  # docker run -it -p 3000:3000 --expose 9229 -p 9229:9229 -v "$(pwd):/home/project:cached" theiaide/theia:next --inspect=0.0.0.0:9229
++  theia:
++    # image: theiaide/theia:latest
++    build:
++      context: ./
++      dockerfile: Dockerfile.theia
++    expose:
++      - 3000
++    ports:
++      - 3000:3000
++    volumes:
++      - "./:/app"
++      # - "./src:/app/src"
++    environment:
++      GFS_FS_NAME: "gremlinfs1"
++      # GFS_FS_MOUNT: /home/theia/gremlinfs
++      GFS_FS_MOUNT: /home/project
++      GREMLIN_HOST: "orientdb"
++      GREMLIN_PORT: "8182"
++      GREMLIN_USERNAME: "root"
++      GREMLIN_PASSWORD: "root"
++      RABBITMQ_HOST: "rabbitmq"
++      RABBITMQ_PORT: "15672"
++      # RABBITMQ_USERNAME: ""
++      # RABBITMQ_PASSWORD: ""
++    privileged: true
++    cap_add: 
++      - SYS_ADMIN
++      - MKNOD
++    devices:
++      - "/dev/fuse:/dev/fuse"
++    restart: on-failure
++    depends_on:
++      - orientdb
++      - rabbitmq
++    links:
++      - orientdb
++      - rabbitmq
+diff --git a/docker-compose.yaml b/docker-compose.yaml
+index caee1fb..3c79f0f 100644
+--- a/docker-compose.yaml
++++ b/docker-compose.yaml
+@@ -2,26 +2,25 @@ version: '3'
+ services:
+ 
+   orientdb:
+-    # image: orientdb:3.0.21-tp3
+-    build:
+-      context: ./
+-      dockerfile: Dockerfile.orientdb
++    # image: orientdb:3.0.21
++    image: orientdb:3.0.21-tp3
+     command: server.sh
+     volumes:
+       # - ./config/orientdb/config:/orientdb/config
+-      - ./config/orientdb/config/gremlin-server.yaml:/orientdb/config/gremlin-server.yaml
+       - ./data/orientdb/databases:/orientdb/databases
+     environment:
+       ORIENTDB_ROOT_PASSWORD: root
+     ports:
+       - 2424:2424
+       - 2480:2480
++      # OpenDB Gremlin, if using -tp3 images
+       - 8182:8182
+ 
+   rabbitmq:
+     image: "rabbitmq:3-management"
+     hostname: "rabbitmq"
+     environment:
++      # RABBITMQ_ERLANG_COOKIE: 
+       RABBITMQ_DEFAULT_USER: "rabbitmq"
+       RABBITMQ_DEFAULT_PASS: "rabbitmq"
+       RABBITMQ_DEFAULT_VHOST: "/"
+@@ -31,19 +30,18 @@ services:
+     labels:
+       NAME: "rabbitmq"
+ 
+-  theia:
++  # https://github.com/mitre/fusera/wiki/FUSE-and-Docker
++  gremlinfs:
+     build:
+       context: ./
+-      dockerfile: Dockerfile.theia
+-    expose:
+-      - 3000
+-    ports:
+-      - 3000:3000
++      dockerfile: Dockerfile
+     volumes:
+       - "./:/app"
++      # - "./src:/app/src"
+     environment:
++      # MOUNT_POINT: /tmp/mntpoint
+       GFS_FS_NAME: "gremlinfs1"
+-      GFS_FS_MOUNT: /home/project
++      GFS_FS_MOUNT: /gremlinfs
+       GREMLIN_HOST: "orientdb"
+       GREMLIN_PORT: "8182"
+       GREMLIN_USERNAME: "root"
+diff --git a/gremlinfs.py b/gremlinfs.py
+index 055b160..c436335 100644
+--- a/gremlinfs.py
++++ b/gremlinfs.py
+@@ -352,16 +352,6 @@ class GremlinFSPath(GremlinFSBase):
+ 
+     # 
+ 
+-    def root(self):
+-
+-        root = None
+-        if self.config().get("folder_root"):
+-            root = self.atid(
+-                self.config().get("folder_root")
+-            )
+-
+-        return root
+-
+     def path(self, path, node = None):
+ 
+         if not node:
+@@ -385,54 +375,13 @@ class GremlinFSPath(GremlinFSBase):
+ 
+     def node(self):
+ 
+-        # if not self._vertexid:
+-        #     return None
+-
+-        if self.has("node"):
+-            return self.get("node")
+-
+-        if self._vertexid:
+-            # label = self._vertexlabel
+-            node = self.atid( self._vertexid )
+-            if node:
+-                self.set("node", node)
+-                return node
+-
+-        else:
+-            node = self.path( self._full )
+-            if node:
+-                self.set("node", node)
+-                return node
+-
+-        return None
+-
+-    def parent(self, path = []):
+-
+-        if not path:
++        if not self._vertexid:
+             return None
+ 
+-        if self.has("parent_node"):
+-            return self.get("parent_node")
+-
+-        parent = None
+-
+-        vindex = 0
+-        for i, item in enumerate(path):
+-            if item == self.config("vertex_folder"):
+-                vindex = i
+-
+-        if vindex:
+-            if vindex > 0:
+-                parent = self.path( path[0:vindex] )
+-                if parent:
+-                    self.set("parent_node", parent)
+-                    return parent
+-
+-        else:
+-            parent = self.path( path )
+-            if parent:
+-                self.set("parent_node", parent)
+-                return parent
++        label = self._vertexlabel
++        node = self.atid( self._vertexid )
++        if node:
++            return node
+ 
+         return None
+ 
+@@ -469,11 +418,11 @@ class GremlinFSPath(GremlinFSBase):
+                     )
+ 
+             except:
+-                # logging.error(' GremlinFS: edge from path ID exception ')
+-                # traceback.print_exc()
++                logging.error(' GremlinFS: edge from path ID exception ')
++                traceback.print_exc()
+                 return None
+ 
+-        elif node and "name" in parts:
++        elif node and "id" in parts:
+ 
+             try:
+ 
+@@ -481,25 +430,24 @@ class GremlinFSPath(GremlinFSBase):
+                     return GremlinFSNode.fromMap(
+                         self.g().V(
+                             node.get("id")
+-                        ).inE().has(
+-                            "name", parts.get("name")
++                        ).inE(
++                            parts.get("id")
+                         ).valueMap(True).next()
+                     )
+                 else:
+                     return GremlinFSNode.fromMap(
+                         self.g().V(
+                             node.get("id")
+-                        ).outE().has(
+-                            "name", parts.get("name")
++                        ).outE(
++                            parts.get("id")
+                         ).valueMap(True).next()
+                     )
+ 
+             except:
+-                # logging.error(' GremlinFS: edge from path ID exception ')
+-                # traceback.print_exc()
++                logging.error(' GremlinFS: edge from path ID exception ')
++                traceback.print_exc()
+                 return None
+ 
+-
+         return None
+ 
+     def edgenode(self, node, edgeid, ine = True, inv = True):
+@@ -555,11 +503,11 @@ class GremlinFSPath(GremlinFSBase):
+                             ).outV().valueMap(True).next() )
+ 
+             except:
+-                # logging.error(' GremlinFS: edge from path ID exception ')
+-                # traceback.print_exc()
++                logging.error(' GremlinFS: edge from path ID exception ')
++                traceback.print_exc()
+                 return None
+ 
+-        elif node and "name" in parts:
++        elif node and "id" in parts:
+ 
+             try:
+ 
+@@ -568,40 +516,79 @@ class GremlinFSPath(GremlinFSBase):
+                         return GremlinFSNode.fromMap(
+                             self.g().V(
+                                 node.get("id")
+-                            ).inE().has(
+-                                "name", parts.get("name")
+-                            ).inV().valueMap(True).next() )
++                            ).inE(
++                                parts.get("id")
++                            ).inV().valueMap(True).next()
++                        )
+ 
+                     else:
+                         return GremlinFSNode.fromMap(
+                             self.g().V(
+                                 node.get("id")
+-                            ).inE().has(
+-                                "name", parts.get("name")
+-                            ).outV().valueMap(True).next() )
++                            ).inE(
++                                parts.get("id")
++                            ).outV().valueMap(True).next()
++                        )
+ 
+                 else:
+                     if inv:
+                         return GremlinFSNode.fromMap(
+                             self.g().V(
+                                 node.get("id")
+-                            ).outE().has(
+-                                "name", parts.get("name")
+-                            ).inV().valueMap(True).next() )
++                            ).outE(
++                                parts.get("id")
++                            ).inV().valueMap(True).next()
++                        )
+ 
+                     else:
+                         return GremlinFSNode.fromMap(
+                             self.g().V(
+                                 node.get("id")
+-                            ).outE().has(
+-                                "name", parts.get("name")
+-                            ).outV().valueMap(True).next() )
++                            ).outE(
++                                parts.get("id")
++                            ).outV().valueMap(True).next()
++                        )
+ 
+             except:
+-                # logging.error(' GremlinFS: edge from path ID exception ')
+-                # traceback.print_exc()
++                logging.error(' GremlinFS: edge from path ID exception ')
++                traceback.print_exc()
+                 return None
+ 
++    def root(self):
++
++        root = None
++        if self.config().get("folder_root"):
++            root = self.atid(
++                self.config().get("folder_root")
++            )
++
++        return root
++
++    def parent(self, path = []):
++
++        if not path:
++            return None
++
++        parent = None
++
++        vindex = 0
++        for i, item in enumerate(path):
++            if item == self.config("vertex_folder"):
++                vindex = i
++
++        if vindex:
++            if vindex > 0:
++                parent = self.path( path[0:vindex] )
++                if parent:
++                    return parent
++
++        else:
++            parent = self.path( path )
++            if parent:
++                return parent
++
++        return None
++
+     # 
+ 
+     def fromid(self, id):
+@@ -609,41 +596,21 @@ class GremlinFSPath(GremlinFSBase):
+         if not id:
+             return None
+ 
+-        # name.type@label@uuid
+-        # ^(.+)\.(.+)\@(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$
++        # 12.34
++        # ^([0-9]+)\.([0-9]+)$
+         matcher = re.match(
+-            r"^(.+)\.(.+)\@(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$",
++            r"^([0-9]+)\.([0-9]+)$",
+             id
+         )
+         if matcher:
+-            nodenme = matcher.group(1)
+-            nodetpe = matcher.group(2)
+-            nodelbl = matcher.group(3)
+-            nodeuid = matcher.group(4)
++            nodeid1 = matcher.group(1)
++            nodeid2 = matcher.group(2)
+             return {
+-                "name": "%s.%s" % (nodenme, nodetpe),
+-                "type": nodetpe,
+-                "label": nodelbl,
+-                "uuid": nodeuid
++                "id1": nodeid1,
++                "id2": nodeid2
+             }
+ 
+-        # name@label@uuid
+-        # ^(.+)\@(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$
+-        matcher = re.match(
+-            r"^(.+)\.(.+)\@(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$",
+-            id
+-        )
+-        if matcher:
+-            nodenme = matcher.group(1)
+-            nodelbl = matcher.group(2)
+-            nodeuid = matcher.group(3)
+-            return {
+-                "name": nodenme,
+-                "label": nodelbl,
+-                "uuid": nodeuid
+-            }
+-
+-        # name.type@uuid
++        # name.label@uuid
+         # ^(.+)\.(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$
+         matcher = re.match(
+             r"^(.+)\.(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$",
+@@ -651,29 +618,15 @@ class GremlinFSPath(GremlinFSBase):
+         )
+         if matcher:
+             nodenme = matcher.group(1)
+-            nodetpe = matcher.group(2)
++            nodelbl = matcher.group(2)
+             nodeuid = matcher.group(3)
+-            return {
+-                "name": "%s.%s" % (nodenme, nodetpe),
+-                "type": nodetpe,
+-                "uuid": nodeuid
+-            }
+-
+-        # name@uuid
+-        # ^(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$
+-        matcher = re.match(
+-            r"^(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$",
+-            id
+-        )
+-        if matcher:
+-            nodenme = matcher.group(1)
+-            nodeuid = matcher.group(2)
+             return {
+                 "name": nodenme,
++                "label": nodelbl,
+                 "uuid": nodeuid
+             }
+ 
+-        # name.type
++        # name.label
+         # ^(.+)\.(.+)\@.+$
+         matcher = re.match(
+             r"^(.+)\.(.+)$",
+@@ -681,10 +634,10 @@ class GremlinFSPath(GremlinFSBase):
+         )
+         if matcher:
+             nodenme = matcher.group(1)
+-            nodetpe = matcher.group(2)
++            nodelbl = matcher.group(2)
+             return {
+-                "name": "%s.%s" % (nodenme, nodetpe),
+-                "type": nodetpe
++                "name": nodenme,
++                "label": nodelbl
+             }
+ 
+         # uuid
+@@ -699,9 +652,8 @@ class GremlinFSPath(GremlinFSBase):
+                 "uuid": nodeuid
+             }
+ 
+-        # Default to name
+         return {
+-            "name": id
++            "id": id
+         }
+ 
+     def atid(self, id):
+@@ -764,17 +716,20 @@ class GremlinFSPath(GremlinFSBase):
+                 # logging.error(' GremlinFS: node from path ID exception ')
+                 return None
+ 
+-        return None
++        elif parts and \
++            "id1" in parts and \
++            "id2" in parts:
++            try:
++                return GremlinFSNode.fromMap(
++                    self.g().V(
++                        "#%s:%s" % (parts["id1"], parts["id2"])
++                    ).valueMap(True).next()
++                )
++            except:
++                # logging.error(' GremlinFS: node from path ID exception ')
++                return None
+ 
+-    def infer(self, field, obj, default = None):
+-        parts = self.fromid( obj ) # self._name )
+-        logging.error(' GremlinFS: infer field: ')
+-        logging.error(field)
+-        logging.error(obj)
+-        logging.error(parts)
+-        if not field in parts:
+-            return default;
+-        return parts.get(field, default);
++        return None
+ 
+     # 
+ 
+@@ -789,7 +744,7 @@ class GremlinFSPath(GremlinFSBase):
+ 
+         # el
+         if self._path == "atpath":
+-            node = self.node()
++            node = self.path( self._full )
+             if node and self.utils().isFolder(node):
+                 return True
+             return False
+@@ -849,7 +804,7 @@ class GremlinFSPath(GremlinFSBase):
+ 
+         # el
+         if self._path == "atpath":
+-            node = self.node()
++            node = self.path( self._full )
+             if node and self.utils().isFile(node):
+                 return True
+             return False
+@@ -909,7 +864,7 @@ class GremlinFSPath(GremlinFSBase):
+ 
+         # el
+         if self._path == "atpath":
+-            node = self.node()
++            node = self.path( self._full )
+             if node and self.utils().isLink(node):
+                 return True
+             return False
+@@ -969,7 +924,7 @@ class GremlinFSPath(GremlinFSBase):
+ 
+         # el
+         if self._path == "atpath":
+-            node = self.node()
++            node = self.path( self._full )
+             if node:
+                 return True
+             return False
+@@ -1058,16 +1013,17 @@ class GremlinFSPath(GremlinFSBase):
+         # el
+         if self._path == "atpath":
+ 
+-            newname = self.infer("name", self._name)
+-            newlabel = self.infer("label", self._name, self.config("folder_label"))
+-            newuuid = self.infer("uuid", self._name)
+-            parent = self.parent(self.get("parent", []))
++            parts = self.fromid( self._name )
++            newid = parts.get("id", None)
++            newuuid = parts.get("uuid", None)
++            newname = parts.get("name", None)
++            newlabel = parts.get("label", self.config("folder_label"))
+ 
+             if newlabel != self.config("folder_label"):
+                 raise FuseOSError(errno.ENOENT)
+ 
+-            if not newname:
+-                raise FuseOSError(errno.ENOENT)
++            if newid and not newname:
++                newname = newid
+ 
+             parent = self.parent(self.get("parent", []))
+             newfolder = self.utils().createFolder(
+@@ -1090,20 +1046,20 @@ class GremlinFSPath(GremlinFSBase):
+         #     return default
+ 
+         elif self._path == "vertex":
++            parts = self.fromid( self._vertexid )
++            label = self._vertexlabel
++            newuuid = parts.get("uuid", None)
++            newname = parts.get("name", None)
++            newlabel = parts.get("label", "vertex")
+ 
+-            newname = self.infer("name", self._name)
+-            newlabel = self.infer("label", self._name, "vertex")
+-            newuuid = self.infer("uuid", self._name)
+-            parent = self.parent(self.get("parent", []))
++            if newid and not newname:
++                newname = newid
+ 
+-            # Do not create an A vertex in /V/B, unless A is vertex
++            # Do not create a A vertex in /V/B, unless A is vertex
+             if label != "vertex":
+                 if label != newlabel:
+                     raise FuseOSError(errno.ENOENT)
+ 
+-            if not newname:
+-                raise FuseOSError(errno.ENOENT)
+-
+             if newlabel == self.config("folder_label"):
+                 newfolder = self.utils().createFolder(
+                     newname,
+@@ -1112,6 +1068,11 @@ class GremlinFSPath(GremlinFSBase):
+                     newuuid,
+                     mode
+                 )
++                # self.utils().setNodeProperty(
++                #     newfolder,
++                #     "mode",
++                #     mode
++                # )
+ 
+             else:
+                 newfile = self.utils().createNode(
+@@ -1121,6 +1082,11 @@ class GremlinFSPath(GremlinFSBase):
+                     newuuid,
+                     mode
+                 )
++                # self.utils().setNodeProperty(
++                #     newfile,
++                #     "mode",
++                #     mode
++                # )
+ 
+             return True
+ 
+@@ -1342,13 +1308,16 @@ class GremlinFSPath(GremlinFSBase):
+         # el
+         if self._path == "atpath":
+ 
+-            newname = self.infer("name", self._name)
+-            newlabel = self.infer("label", self._name, "vertex")
+-            newuuid = self.infer("uuid", self._name)
+-            parent = self.parent(self.get("parent", []))
++            parts = self.fromid( self._name )
++            newid = parts.get("id", None)
++            newuuid = parts.get("uuid", None)
++            newname = parts.get("name", None)
++            newlabel = parts.get("label", "vertex")
+ 
+-            if not newname:
+-                raise FuseOSError(errno.ENOENT)
++            if newid and not newname:
++                newname = newid
++
++            parent = self.parent(self.get("parent", []))
+ 
+             newfile = self.utils().createFile(
+                 newname,
+@@ -1507,13 +1476,13 @@ class GremlinFSPath(GremlinFSBase):
+                     parts["name"],
+                     mode
+                 )
+-            elif parts and "name" in parts:
++            elif parts and "id" in parts:
+                 # we are the target, in edge means ...
+                 self.utils().createLink(
+                     source,
+                     node,
++                    parts["id"],
+                     None,
+-                    parts["name"],
+                     mode
+                 )
+ 
+@@ -1534,13 +1503,13 @@ class GremlinFSPath(GremlinFSBase):
+                     parts["name"],
+                     mode
+                 )
+-            elif parts and "name" in parts:
++            elif parts and "id" in parts:
+                 # we are the target, out edge means ...
+                 self.utils().createLink(
+                     node,
+                     source,
++                    parts["id"],
+                     None,
+-                    parts["name"],
+                     mode
+                 )
+ 
+@@ -1679,13 +1648,13 @@ class GremlinFSPath(GremlinFSBase):
+                     True,
+                     parts["name"]
+                 )
+-            elif parts and "name" in parts:
++            elif parts and "id" in parts:
+                 # we are the target, in edge means ...
+                 self.utils().deleteLink(
+                     node,
+-                    None,
++                    parts["id"],
+                     True,
+-                    parts["name"]
++                    None
+                 )
+ 
+             return True
+@@ -1703,13 +1672,13 @@ class GremlinFSPath(GremlinFSBase):
+                     False,
+                     parts["name"]
+                 )
+-            elif parts and "name" in parts:
++            elif parts and "id" in parts:
+                 # we are the target, out edge means ...
+                 self.utils().deleteLink(
+                     node,
+-                    None,
++                    parts["id"],
+                     False,
+-                    parts["name"]
++                    None
+                 )
+ 
+             return True
+@@ -1721,6 +1690,7 @@ class GremlinFSPath(GremlinFSBase):
+ 
+     # 
+ 
++
+     def readNode(self, size = 0, offset = 0):
+ 
+         default = None
+@@ -1732,7 +1702,7 @@ class GremlinFSPath(GremlinFSBase):
+ 
+         # el
+         if self._path == "atpath":
+-            node = self.utils().file(self.node())
++            node = self.utils().file( self.path( self._full ) )
+             data = self.utils().readNodeProperty(
+                 node,
+                 self.config("data_property"),
+@@ -1817,7 +1787,7 @@ class GremlinFSPath(GremlinFSBase):
+ 
+         # el
+         if self._path == "atpath":
+-            node = self.utils().file(self.node())
++            node = self.utils().file( self.path( self._full ) )
+ 
+             # self.utils().setNodeProperty(
+             #     node,
+@@ -1834,7 +1804,7 @@ class GremlinFSPath(GremlinFSBase):
+ 
+             # newdata = 
+             self.utils().readNodeProperty(
+-                self.node(),
++                self.path( self._full ),
+                 self.config("data_property"),
+                 ""
+             )
+@@ -1933,17 +1903,24 @@ class GremlinFSPath(GremlinFSBase):
+         if self._path == "atpath":
+ 
+             parts = newmatch.fromid( newmatch._name )
++            newid = parts.get("id", None)
+             newuuid = parts.get("uuid", None)
+             newname = parts.get("name", None)
+-            newtype = parts.get("type", None)
+-            # Cannot change node label at this time
+-            # newlabel = parts.get("label", "vertex")
++            newlabel = parts.get("label", "vertex")
+ 
+-            node = GremlinFSUtils.found(self.node())
++            node = GremlinFSUtils.found( self.path( self._full ) )
+             parent = newmatch.parent(newmatch.get("parent", []))
+ 
+-            self.utils().renameNode(node, newmatch._name)
+-            self.utils().moveNode(node, parent)
++            if newlabel and newlabel != node.get("label"):
++                newnode = self.utils().cloneNode(node, newlabel)
++                if newnode:
++                    if newname:
++                        self.utils().renameNode(newnode, newname)
++                    self.utils().moveNode(newnode, parent)
++                    self.utils().deleteNode(node)
++            else:
++                self.utils().renameNode(node, newmatch._name)
++                self.utils().moveNode(node, parent)
+ 
+             return True
+ 
+@@ -1968,9 +1945,11 @@ class GremlinFSPath(GremlinFSBase):
+         elif self._path == "vertex_property":
+ 
+             oldnode = GremlinFSUtils.found( self.node() )
++            oldid = oldnode.get("id")
+             oldname = self._vertexproperty
+ 
+             newnode = newmatch.node()
++            newid = newnode.get("id")
+             newname = newmatch._vertexproperty
+ 
+             data = ""
+@@ -2035,7 +2014,7 @@ class GremlinFSPath(GremlinFSBase):
+         # el
+         if self._path == "atpath":
+ 
+-            node = GremlinFSUtils.found(self.node())
++            node = GremlinFSUtils.found( self.path( self._full ) )
+             self.utils().deleteNode(node)
+ 
+             return True
+@@ -2092,7 +2071,7 @@ class GremlinFSPath(GremlinFSBase):
+     def setProperty(self, key, value):
+ 
+         if self._path == "atpath":
+-            node = self.node()
++            node = self.path( self._full )
+             if node:
+                 self.utils().setNodeProperty(
+                     node,
+@@ -2103,7 +2082,7 @@ class GremlinFSPath(GremlinFSBase):
+     def getProperty(self, key, default = None):
+ 
+         if self._path == "atpath":
+-            node = self.node()
++            node = self.path( self._full )
+             if node:
+                 return self.utils().getNodeProperty(
+                     node,
+@@ -2179,7 +2158,7 @@ class GremlinFSNode(GremlinFSBase):
+         #     maplabel = None
+ 
+         if mapname and mapuuid and maplabel and not short:
+-            return "%s@%s@%s" % (mapname, maplabel, mapuuid)
++            return "%s.%s@%s" % (mapname, maplabel, mapuuid)
+ 
+         elif mapname and maplabel and short:
+ 
+@@ -2190,17 +2169,17 @@ class GremlinFSNode(GremlinFSBase):
+                 return mapname
+ 
+             else:
+-                return mapname # "%s.%s" % (mapname, maplabel)
++                return "%s.%s" % (mapname, maplabel)
+ 
+         elif mapname and maplabel:
+-            return mapname # "%s.%s" % (mapname, maplabel)
+-
+-        elif mapname:
+-            return mapname
++            return "%s.%s" % (mapname, maplabel)
+ 
+         elif mapuuid:
+             return mapuuid
+ 
++        elif maplabel:
++            return maplabel
++
+     def matches(self, inmap):
+         node = self
+         mapid = inmap.get('id', None)
+@@ -2635,6 +2614,71 @@ class GremlinFSUtils(GremlinFSBase):
+ 
+         return newnode
+ 
++    # https://stackoverflow.com/questions/51900116/gremlin-clone-a-node-and-its-edges
++    # https://github.com/nedlowe/gremlin-python-example/blob/master/app.py
++    # def cloneNode(self, node, newname, newlabel = None):
++    def cloneNode(self, node, newlabel = None):
++
++        if not node:
++            return None
++
++        # if not name:
++        #     return None
++
++        if not newlabel:
++            newlabel = node.get("label", "vertex")
++
++        clone = None
++
++        newnode = None
++
++        try:
++
++            if newlabel and newlabel != "vertex":
++
++                clone = self.g().V(
++                    node.get("id")
++                ).as_(
++                    'source'
++                ).addV( newlabel ).as_('clone').sideEffect(
++                    __.select('source').properties().as_('p').select('clone').property(
++                        __.select('p').key(), 
++                        __.select('p').value()
++                    )
++                ).next()
++
++            else:
++
++                clone = self.g().V(
++                    node.get("id")
++                ).as_(
++                    'source'
++                ).addV().as_('clone').sideEffect(
++                    __.select('source').properties().as_('p').select('clone').property(
++                        __.select('p').key(), 
++                        __.select('p').value()
++                    )
++                ).next()
++
++        except:
++            logging.error(' GremlinFS: cloneNode copy exception ')
++            traceback.print_exc()
++            # return None
++
++        clones = GremlinFSNode.fromMaps(
++            self.g().V().has(
++                'uuid', node.get("uuid")
++            ).valueMap(True).toList()
++        )
++
++        if clones:
++            for cclone in clones:
++                if cclone.get("id") != node.get("id"):
++                    newnode = cclone
++
++        return newnode
++
++
+     def deleteNode(self, node):
+ 
+         if not node:
+diff --git a/test.py b/test.py
+new file mode 100644
+index 0000000..5e8ce5f
+--- /dev/null
++++ b/test.py
+@@ -0,0 +1,173 @@
++# 
++# Copyright (c) 2019, John Grundback
++# All rights reserved.
++# 
++
++# 
++import os
++import sys
++import logging
++import errno
++import stat
++import uuid
++import re
++import traceback
++
++# 
++from time import time
++
++# 
++# from fuse import FUSE
++# from fuse import Operations
++# from fuse import FuseOSError
++
++
++# 3.3.0
++# http://tinkerpop.apache.org/docs/3.3.0-SNAPSHOT/reference/#gremlin-python
++# from gremlin_python import statics
++# from gremlin_python.structure.graph import Graph
++# from gremlin_python.process.graph_traversal import __
++# from gremlin_python.process.strategies import *
++# from gremlin_python.process.traversal import T, P, Operator
++# from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
++
++
++
++# 
++# 
++# import config
++
++def irepl(old, data, index = 0):
++	offset = index
++
++	if not old:
++		if data and index == 0:
++			return data
++		return None
++
++	if not data:
++		return old
++
++	if index < 0:
++		return old
++
++	if offset > len(old):
++		return old
++
++	new = ""
++
++	prefix = ""
++	lprefix = 0
++
++	infix = data
++	linfix = len(data)
++
++	suffix = None
++	lsuffix = 0
++
++	# if not old and index
++
++	if offset > 0 and offset <= len(old):
++
++		prefix = old[:offset]
++		lprefix = len(prefix)
++
++	if len(old) > lprefix + linfix:
++
++		suffix = old[lprefix + linfix:]
++		lsuffix = len(old)
++
++	if suffix and lsuffix > 0:
++		new = "%s%s%s" % (prefix, infix, suffix)
++	else:
++		new = "%s%s" % (prefix, infix)
++
++	return new
++
++
++def irepltest(old, data, index = 0, expect = None):
++
++	newdata = irepl(old, data, index)
++	if newdata != expect:
++		print " REPL: OLD: %s, DATA: %s, INDEX: %d" % (old, data, index)
++		print "MISMATCH: OUT: %s, EXPECT: %s" % (newdata, expect)
++		print " "
++		print " "
++	else:
++		# print " REPL: OLD: %s, DATA: %s, INDEX: %d" % (old, data, index)
++		# print "OUT: %s, EXPECT: %s" % (newdata, expect)
++		# print " "
++		# print " "
++		pass
++
++
++if __name__ == '__main__':
++
++
++	# 
++	# REPL: OLD: 0123456789, DATA: ABC, INDEX: 5
++	# MISMATCH: OUT: 012345ABC, EXPECT: 123456
++	# 
++	# 0 1 2 3 4 5 6 7 8 9
++	# -------------------
++	# 0 1 2 3 4 5 6 7 8 9
++	#           A B C 
++	# 
++	# 0 1 2 3 4 A B C 8 9
++	# 
++
++
++	# REPL: OLD: 012345, DATA: ABC, INDEX: 7
++	# MISMATCH: OUT: 012345, EXPECT: 012345ABC
++	# 
++	# 0 1 2 3 4 5 6 7
++	# -------------------
++	# 0 1 2 3 4 5
++	#               A B C 
++	# 
++	# 0 1 2 3 4 5
++	# 
++
++
++	# 
++	data = irepltest(None, None, 0, None)
++	data = irepltest(None, None, 1000, None)
++	data = irepltest("ABC", None, 0, "ABC")
++	data = irepltest("ABC", None, -1000, "ABC")
++	data = irepltest("ABC", None, 1000, "ABC")
++	data = irepltest("ABC", "123", 0, "123")
++	data = irepltest("ABC", "123", -1000, "ABC")
++	data = irepltest("ABC", "123", 1000, "ABC")
++	data = irepltest(None, "123", 0, "123")
++	data = irepltest(None, "123", -1000, None)
++	data = irepltest(None, "123", 1000, None)
++
++	# 
++	data = irepltest("012", "ABC", 0, "ABC")
++	data = irepltest("012345", "ABC", 0, "ABC345")
++	data = irepltest("012345678", "ABC", 0, "ABC345678")
++
++	# 
++	data = irepltest("012", "ABC", 3, "012ABC")
++	data = irepltest("012345", "ABC", 3, "012ABC")
++	data = irepltest("012345678", "ABC", 3, "012ABC678")
++
++	# 
++	data = irepltest("012", "ABC", 6, "012")
++	data = irepltest("012345", "ABC", 6, "012345ABC")
++	data = irepltest("012345678", "ABC", 6, "012345ABC")
++
++	# 
++	data = irepltest("012", "ABC", 7, "012")
++	data = irepltest("012345", "ABC", 7, "012345")
++	data = irepltest("012345678", "ABC", 7, "0123456ABC")
++
++	# 
++	data = irepltest("0123456789", "ABC", 5, "01234ABC89")
++	data = irepltest("0123456789", "ABC", 6, "012345ABC9")
++	data = irepltest("0123456789", "ABC", 7, "0123456ABC")
++	data = irepltest("0123456789", "ABC", 8, "01234567ABC")
++	data = irepltest("0123456789", "ABC", 9, "012345678ABC")
++	data = irepltest("0123456789", "ABC", 10, "0123456789ABC")
++	data = irepltest("0123456789", "ABC", 11, "0123456789")
++	data = irepltest("0123456789", "ABC", 12, "0123456789")
