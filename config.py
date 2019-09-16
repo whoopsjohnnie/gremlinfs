@@ -3,7 +3,7 @@ import logging
 
 gremlinfs = dict(
 
-	log_level = logging.INFO, # logging.DEBUG, # logging.INFO,
+	log_level = logging.INFO, # logging.DEBUG
 
     folder_label = 'group',
     ref_label = 'ref',

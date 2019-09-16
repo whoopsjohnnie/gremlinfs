@@ -208,7 +208,6 @@ class GremlinFSPath(GremlinFSBase):
                     "path": "vertex_labels"
                 })
 
-
             elif len(expanded) == vindex + 2:
                 match.update({
                     "path": "vertexes",
@@ -388,33 +387,25 @@ class GremlinFSPath(GremlinFSBase):
         # if not self._vertexid:
         #     return None
 
-        if self.has("node"):
-            return self.get("node")
-
         if self._vertexid:
             # label = self._vertexlabel
             node = self.atid( self._vertexid )
             if node:
-                self.set("node", node)
                 return node
 
         else:
             node = self.path( self._full )
             if node:
-                self.set("node", node)
                 return node
 
         return None
 
     def parent(self, path = []):
 
+        parent = self.root()
+
         if not path:
-            return None
-
-        if self.has("parent_node"):
-            return self.get("parent_node")
-
-        parent = None
+            return parent
 
         vindex = 0
         for i, item in enumerate(path):
@@ -425,16 +416,14 @@ class GremlinFSPath(GremlinFSBase):
             if vindex > 0:
                 parent = self.path( path[0:vindex] )
                 if parent:
-                    self.set("parent_node", parent)
                     return parent
 
         else:
             parent = self.path( path )
             if parent:
-                self.set("parent_node", parent)
                 return parent
 
-        return None
+        return parent
 
     def edge(self, node, edgeid, ine = True):
 
@@ -498,7 +487,6 @@ class GremlinFSPath(GremlinFSBase):
                 # logging.error(' GremlinFS: edge from path ID exception ')
                 # traceback.print_exc()
                 return None
-
 
         return None
 
@@ -764,14 +752,22 @@ class GremlinFSPath(GremlinFSBase):
                 # logging.error(' GremlinFS: node from path ID exception ')
                 return None
 
+        # Fallback try as straigt up DB id
+        else:
+            try:
+                return GremlinFSNode.fromMap(
+                    self.g().V(
+                        id
+                    ).valueMap(True).next()
+                )
+            except:
+                # logging.error(' GremlinFS: node from path ID exception ')
+                return None
+
         return None
 
     def infer(self, field, obj, default = None):
         parts = self.fromid( obj ) # self._name )
-        logging.error(' GremlinFS: infer field: ')
-        logging.error(field)
-        logging.error(obj)
-        logging.error(parts)
         if not field in parts:
             return default;
         return parts.get(field, default);
@@ -1170,7 +1166,9 @@ class GremlinFSPath(GremlinFSBase):
             nodes = self.utils().listFolderEntries(root)
             if nodes:
                 for node in nodes:
-                    entries.append(node.toid(True))
+                    nodeid = node.toid(True)
+                    if nodeid:
+                        entries.append(nodeid)
 
             return entries
 
@@ -1184,7 +1182,9 @@ class GremlinFSPath(GremlinFSBase):
             nodes = self.utils().listFolderEntries(parent)
             if nodes:
                 for node in nodes:
-                    entries.append(node.toid(True))
+                    nodeid = node.toid(True)
+                    if nodeid:
+                        entries.append(nodeid)
 
             return entries
 
@@ -1192,7 +1192,8 @@ class GremlinFSPath(GremlinFSBase):
             labels = self.g().V().label().dedup()
             if labels:
                 for label in labels:
-                    entries.append(label.strip().replace("\t", "").replace("\t", ""))
+                    if label:
+                        entries.append(label.strip().replace("\t", "").replace("\t", ""))
 
             return entries
 
@@ -1243,7 +1244,9 @@ class GremlinFSPath(GremlinFSBase):
 
             nodes = GremlinFSUtils.found( nodes )
             for node in nodes:
-                entries.append( node.toid() )
+                nodeid = node.toid()
+                if nodeid:
+                    entries.append( nodeid )
 
             return entries
 
@@ -1277,7 +1280,9 @@ class GremlinFSPath(GremlinFSBase):
             )
             if nodes:
                 for cnode in nodes:
-                    entries.append( cnode.toid() )
+                    nodeid = cnode.toid()
+                    if nodeid:
+                        entries.append( nodeid )
 
             return entries
 
@@ -1291,7 +1296,9 @@ class GremlinFSPath(GremlinFSBase):
             )
             if nodes:
                 for cnode in nodes:
-                    entries.append( cnode.toid() )
+                    nodeid = cnode.toid()
+                    if nodeid:
+                        entries.append( nodeid )
 
             return entries
 
@@ -2276,18 +2283,6 @@ class GremlinFSUtils(GremlinFSBase):
 
             suffix = old[lprefix + linfix:]
             lsuffix = len(old)
-
-        # if prefix:
-        #     logging.error( " !! PREFIX TYPE !! " )
-        #     logging.error( type(prefix) )
-
-        # if infix:
-        #     logging.error( " !! INFIX TYPE !! " )
-        #     logging.error( type(infix) )
-
-        # if suffix:
-        #     logging.error( " !! SUFFIX TYPE !! " )
-        #     logging.error( type(suffix) )
 
         if lprefix > 0 and linfix > 0 and lsuffix > 0:
             new = prefix + infix + suffix
