@@ -3,7 +3,11 @@ import logging
 
 gremlinfs = dict(
 
-	log_level = logging.INFO, # logging.DEBUG
+    log_level = logging.INFO,
+
+    fs_id = "gfs1",
+    fs_root = None,
+    fs_root_init = False,
 
     folder_label = 'group',
     ref_label = 'ref',
@@ -23,8 +27,5 @@ gremlinfs = dict(
     default_uid = 0,
     default_gid = 0,
     default_mode = 0o644,
-
-    folder_root = None,
-    folder_root_init = False
 
 )
