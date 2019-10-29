@@ -4,6 +4,10 @@
 # 
 
 # 
+from __future__ import print_function
+from future.utils import iteritems
+
+# 
 import os
 import sys
 import logging
@@ -18,7 +22,11 @@ import contextlib
 
 # 
 from time import time
-from StringIO import StringIO
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 # 
 from fuse import FUSE
@@ -118,7 +126,7 @@ class GremlinFSBase(object):
 
     def all(self, prefix = None):
         props = {}
-        for prop, value in vars(self).iteritems():
+        for prop, value in iteritems(vars(self)):
             if prefix:
                 if prop and len(prop) > 0 and prop.startswith("_%s." % (prefix)):
                     props[prop.replace("_%s." % (prefix), "", 1)] = value
