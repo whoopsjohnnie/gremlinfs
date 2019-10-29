@@ -33,7 +33,6 @@ from fuse import FUSE
 from fuse import Operations
 from fuse import FuseOSError
 
-
 # 3.3.0
 # http://tinkerpop.apache.org/docs/3.3.0-SNAPSHOT/reference/#gremlin-python
 from gremlin_python import statics
@@ -43,7 +42,8 @@ from gremlin_python.process.strategies import *
 from gremlin_python.process.traversal import T, P, Operator
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
 
-
+# 
+import pika
 
 # 
 # 
@@ -53,6 +53,27 @@ import config
 
 # 
 logging.basicConfig(level=config.gremlinfs['log_level'])
+
+
+
+def amqp_rcve(operations = None):
+
+    mqconnection = operations.mqconnection()
+    mqchannel = mqconnection.channel()
+
+    mqchannel.queue_declare(
+        queue = operations.config("fs_id")
+    )
+
+    mqchannel.basic_consume(
+        queue = operations.config("fs_id"),
+        auto_ack = True,
+        on_message_callback = operations.mqonevent
+    )
+
+    mqchannel.start_consuming()
+
+    mqconnection.close()
 
 
 
@@ -408,6 +429,12 @@ class GremlinFSPath(GremlinFSBase):
 
     def g(self):
         return GremlinFS.operations().g()
+
+    def mq(self):
+        return GremlinFS.operations().mq()
+
+    def mqevent(self, event, **kwargs):
+        return GremlinFS.operations().mqevent(event, **kwargs)
 
     def config(self, key = None, default = None):
         return GremlinFS.operations().config(key, default)
@@ -2001,6 +2028,12 @@ class GremlinFSNode(GremlinFSBase):
     def g(self):
         return GremlinFS.operations().g()
 
+    def mq(self):
+        return GremlinFS.operations().mq()
+
+    def mqevent(self, event, **kwargs):
+        return GremlinFS.operations().mqevent(event, **kwargs)
+
     def config(self, key = None, default = None):
         return GremlinFS.operations().config(key, default)
 
@@ -3172,6 +3205,12 @@ class GremlinFSUtils(GremlinFSBase):
     def g(self):
         return GremlinFS.operations().g()
 
+    def mq(self):
+        return GremlinFS.operations().mq()
+
+    def mqevent(self, event, **kwargs):
+        return GremlinFS.operations().mqevent(event, **kwargs)
+
     def config(self, key = None, default = None):
         return GremlinFS.operations().config(key, default)
 
@@ -3223,6 +3262,7 @@ class GremlinFSOperations(Operations):
         **kwargs):
 
         self._g = None
+        self._mq = None
 
         self._config = None
 
@@ -3272,6 +3312,7 @@ class GremlinFSOperations(Operations):
         # logging.debug(' GremlinFS rabbitmq password: %s' % (str(self.rabbitmq_password)))
 
         self._g = None
+        self._mq = None
 
         self._config = None
 
@@ -3289,6 +3330,35 @@ class GremlinFSOperations(Operations):
         ))
         return g
 
+    def mqconnection(self):
+
+        # url = 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/%2f'
+        #        amqp://rabbitmq:rabbitmq@rabbitmq:5672/%2f
+        url = "amqp://%s:%s@%s:%s/%s" % (
+            self.rabbitmq_username,
+            self.rabbitmq_password,
+            self.rabbitmq_host,
+            str(self.rabbitmq_port),
+            '%2f'
+        )
+
+        params = pika.URLParameters(url)
+        params.socket_timeout = 5
+
+        connection = pika.BlockingConnection(params) # Connect to CloudAMQP
+
+        return connection
+
+    def mqchannel(self):
+
+        mqconnection = self.mqconnection()
+        mqchannel = mqconnection.channel()
+        mqchannel.queue_declare(
+            queue = 'hello'
+        )
+
+        return mqchannel
+
     def g(self):
 
         if self._g:
@@ -3298,6 +3368,96 @@ class GremlinFSOperations(Operations):
         self._g = g
 
         return self._g
+
+    def mq(self):
+
+        if self._mq:
+            return self._mq
+
+        mqchannel = self.mqchannel()
+        mqchannel.queue_declare(
+            queue = 'hello'
+        )
+
+        self._mq = mqchannel
+
+        return self._mq
+
+    def mqevent(self, event, **kwargs):
+
+        try:
+
+            # import json
+            import simplejson as json
+
+            data = {
+                "path": kwargs.get("path", {}).get("full", None),
+                "node": {},
+                "parent": {},
+                "event": event,
+                "property": kwargs.get("property", None),
+                "value": kwargs.get("value", None),
+                "mode": kwargs.get("mode", None),
+                "offset": kwargs.get("offset", None),
+                "encoding": kwargs.get("encoding", None),
+                "ine": kwargs.get("ine", None)
+            }
+
+            node = kwargs.get("node", None)
+            if node:
+                data["node"]["id"] = node.get("id", None)
+                data["node"]["uuid"] = node.get("uuid", None)
+                data["node"]["name"] = node.get("name", None)
+                data["node"]["label"] = node.get("label", None)
+
+            parent = kwargs.get("parent", None)
+            if parent:
+                data["parent"]["id"] = parent.get("id", None)
+                data["parent"]["uuid"] = parent.get("uuid", None)
+                data["parent"]["name"] = parent.get("name", None)
+                data["parent"]["label"] = parent.get("label", None)
+
+            logging.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT ')
+            logging.info(data)
+
+            self.mq().basic_publish(
+                exchange = '',
+                routing_key = self.config("fs_id"),
+                body = json.dumps(
+                    data, 
+                    indent=4, 
+                    sort_keys=False
+                )
+            )
+
+        except:
+            logging.error(' GremlinFS: MQ/AMQP send exception ')
+            traceback.print_exc()
+
+    def mqonevent(self, event, data, propagate = True):
+        logging.info(' GremlinFS: INBOUND AMQP/RABBIT EVENT ')
+
+    def mqonmessage(self, ch, method, properties, body):
+
+        import json
+
+        logging.info(' GremlinFS: INBOUND AMQP/RABBIT EVENT ')
+
+        try:
+
+            import json
+            # import simplejson as json
+            json = json.loads(body)
+
+            if "node" in json and "event" in json:
+                node = json.get("node", None)
+                event = json.get("event", None)
+                node = GremlinFSVertex.load(node.get("uuid", None))
+                self.mqonevent(event, json, propagate = True)
+
+        except:
+            logging.error(' GremlinFS: INBOUND AMQP/RABBIT EVENT EXCEPTION ')
+            traceback.print_exc()
 
     def config(self, key = None, default = None):
 
@@ -4063,6 +4223,18 @@ def main(
             rabbitmq_password = rabbitmq_password
 
         )
+
+        # AMQP THREAD
+        import threading
+
+        amqp_rcve_thread = threading.Thread(
+            target = amqp_rcve,
+            kwargs = dict(
+                operations = operations
+            ),
+            daemon = True
+        )
+        amqp_rcve_thread.start()
 
         FUSE(
             operations,
