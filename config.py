@@ -13,6 +13,7 @@ gremlinfs = dict(
     ref_label = 'ref',
     in_label = 'in',
     self_label = 'self',
+    template_label = 'template',
 
     in_name = 'in0',
     self_name = 'self0',
@@ -23,6 +24,7 @@ gremlinfs = dict(
     uuid_property = 'uuid',
     name_property = 'name',
     data_property = 'data',
+    template_property = 'template',
 
     default_uid = 0,
     default_gid = 0,
