@@ -1651,11 +1651,21 @@ class GremlinFSPath(GremlinFSBase):
 
             template = None
 
-            if node.hasProperty(self.config("template_property")):
-                template = node.getProperty(
-                    self.config("template_property"),
-                    ""
-                )
+            try:
+                templatenodes = node.follow(self.config("template_label"))
+                if templatenodes and len(templatenodes) >= 1:
+                    template = templatenodes[0].readProperty(
+                        self.config("data_property"),
+                        "",
+                        encoding = "base64"
+                    )
+                elif node.hasProperty(self.config("template_property")):
+                    template = node.getProperty(
+                        self.config("template_property"),
+                        ""
+                    )
+            except:
+                pass
 
             if template:
 
@@ -2516,7 +2526,7 @@ class GremlinFSNode(GremlinFSBase):
 
             # Check if this event should be propagated
             if node and propagate:
-                inedges = node.edges(True)
+                inedges = node.edges(None, True)
                 for inedge in inedges:
                     if inedge:
                         innode = inedge.node(False)
@@ -2739,11 +2749,74 @@ class GremlinFSVertex(GremlinFSNode):
             vs.valueMap(True).toList()
         )
 
-    def edges(self, ine = True):
+    def edges(self, edgeid = None, ine = True):
 
         node = self
 
-        if node:
+        label = GremlinFSEdge.infer("label", edgeid, None)
+        name = GremlinFSEdge.infer("name", edgeid, None)
+
+        if not label and name:
+            label = name
+            name = None
+
+        if node and label and name:
+
+            try:
+
+                if ine:
+                    return GremlinFSEdge.fromEs(
+                        self.g().V(
+                            node.get("id")
+                        ).inE(
+                            label
+                        ).has(
+                            "name", name
+                        )
+                    )
+                else:
+                    return GremlinFSEdge.fromEs(
+                        self.g().V(
+                            node.get("id")
+                        ).outE(
+                            label
+                        ).has(
+                            "name", name
+                        )
+                    )
+
+            except:
+                # logging.error(' GremlinFS: edge from path ID exception ')
+                # traceback.print_exc()
+                return None
+
+        elif node and label:
+
+            try:
+
+                if ine:
+                    return GremlinFSEdge.fromEs(
+                        self.g().V(
+                            node.get("id")
+                        ).inE(
+                            label
+                        )
+                    )
+                else:
+                    return GremlinFSEdge.fromEs(
+                        self.g().V(
+                            node.get("id")
+                        ).outE(
+                            label
+                        )
+                    )
+
+            except:
+                # logging.error(' GremlinFS: edge from path ID exception ')
+                # traceback.print_exc()
+                return None
+
+        elif node:
 
             try:
 
@@ -2834,11 +2907,120 @@ class GremlinFSVertex(GremlinFSNode):
 
         return None
 
-    def edgenodes(self, ine = True, inv = True):
+    def edgenodes(self, edgeid = None, ine = True, inv = True):
 
         node = self
 
-        if node:
+        label = GremlinFSEdge.infer("label", edgeid, None)
+        name = GremlinFSEdge.infer("name", edgeid, None)
+
+        if not label and name:
+            label = name
+            name = None
+
+        if node and label and name:
+
+            try:
+
+                if ine:
+                    if inv:
+                        return GremlinFSVertex.fromVs(
+                            self.g().V(
+                                node.get("id")
+                            ).inE(
+                                label
+                            ).has(
+                                "name", name
+                            ).inV()
+                        )
+
+                    else:
+                        return GremlinFSVertex.fromVs(
+                            self.g().V(
+                                node.get("id")
+                            ).inE(
+                                label
+                            ).has(
+                                "name", name
+                            ).outV()
+                        )
+
+                else:
+                    if inv:
+                        return GremlinFSVertex.fromVs(
+                            self.g().V(
+                                node.get("id")
+                            ).outE(
+                                label
+                            ).has(
+                                "name", name
+                            ).inV()
+                        )
+
+                    else:
+                        return GremlinFSVertex.fromVs(
+                            self.g().V(
+                                node.get("id")
+                            ).outE(
+                                label
+                            ).has(
+                                "name", name
+                            ).outV()
+                        )
+
+            except:
+                # logging.error(' GremlinFS: edge from path ID exception ')
+                # traceback.print_exc()
+                return None
+
+        elif node and label:
+
+            try:
+
+                if ine:
+                    if inv:
+                        return GremlinFSVertex.fromVs(
+                            self.g().V(
+                                node.get("id")
+                            ).inE(
+                                label
+                            ).inV()
+                        )
+
+                    else:
+                        return GremlinFSVertex.fromVs(
+                            self.g().V(
+                                node.get("id")
+                            ).inE(
+                                label
+                            ).outV()
+                        )
+
+                else:
+                    if inv:
+                        return GremlinFSVertex.fromVs(
+                            self.g().V(
+                                node.get("id")
+                            ).outE(
+                                label
+                            ).inV()
+                        )
+
+                    else:
+                        return GremlinFSVertex.fromVs(
+                            self.g().V(
+                                node.get("id")
+                            ).outE(
+                                label
+                            ).outV()
+                        )
+
+            except:
+                # logging.error(' GremlinFS: edge from path ID exception ')
+                # traceback.print_exc()
+                return None
+
+        elif node:
 
             try:
 
@@ -2991,10 +3173,11 @@ class GremlinFSVertex(GremlinFSNode):
                 return None
 
     def follow(self, edgeid):
-        node = self.edgenode(edgeid, False)
-        if not node:
+        # node = self.edgenode(edgeid, False)
+        nodes = self.edgenodes(edgeid, False)
+        if not nodes:
             return []
-        return node
+        return nodes
 
     # 
 
@@ -3584,6 +3767,18 @@ class GremlinFSNodeWrapper(GremlinFSBase):
         self.node = node
 
     def __getattr__(self, attr):
+        try:
+            edgenodes = self.node.follow(attr)
+            if edgenodes:
+                if len(edgenodes) > 1:
+                    ret = []
+                    for edgenode in edgenodes:
+                        ret.append(GremlinFSNodeWrapper(edgenode))
+                    return ret
+                elif len(edgenodes) == 1:
+                    return GremlinFSNodeWrapper(edgenodes[0])
+        except:
+            pass
         return self.get(attr)
 
     def all(self, prefix = None):
@@ -4193,6 +4388,7 @@ class GremlinFSOperations(Operations):
             "ref_label": GremlinFSUtils.conf('ref_label', 'ref'),
             "in_label": GremlinFSUtils.conf('in_label', 'ref'),
             "self_label": GremlinFSUtils.conf('self_label', 'ref'),
+            "template_label": GremlinFSUtils.conf('template_label', 'template'),
 
             "in_name": GremlinFSUtils.conf('in_name', 'in0'),
             "self_name": GremlinFSUtils.conf('self_name', 'self0'),
