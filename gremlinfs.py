@@ -430,11 +430,20 @@ class GremlinFSPath(GremlinFSBase):
     def g(self):
         return GremlinFS.operations().g()
 
+    def ro(self):
+        return GremlinFS.operations().ro()
+
     def mq(self):
         return GremlinFS.operations().mq()
 
     def mqevent(self, event, **kwargs):
         return GremlinFS.operations().mqevent(event, **kwargs)
+
+    def query(self, query, node = None, default = None):
+        return self.utils().query(query, node, default)
+
+    def eval(self, command, node = None, default = None):
+        return self.utils().eval(command, node, default)
 
     def config(self, key = None, default = None):
         return GremlinFS.operations().config(key, default)
@@ -1638,11 +1647,37 @@ class GremlinFSPath(GremlinFSBase):
         if self._path == "atpath":
             node = self.node().file()
 
-            data = node.readProperty(
-                self.config("data_property"),
-                "",
-                encoding = "base64"
-            )
+            data = ""
+
+            template = None
+
+            if node.hasProperty(self.config("template_property")):
+                template = node.getProperty(
+                    self.config("template_property"),
+                    ""
+                )
+
+            if template:
+
+                if not template:
+                    return default
+
+                import pystache
+                renderer = pystache.Renderer()
+
+                data = pystache.render(
+                    template, GremlinFSNodeWrapper(
+                        node = node
+                    )
+                )
+
+            else:
+
+                data = node.readProperty(
+                    self.config("data_property"),
+                    "",
+                    encoding = "base64"
+                )
 
             data = tobytes(data)
 
@@ -2204,11 +2239,20 @@ class GremlinFSNode(GremlinFSBase):
     def g(self):
         return GremlinFS.operations().g()
 
+    def ro(self):
+        return GremlinFS.operations().ro()
+
     def mq(self):
         return GremlinFS.operations().mq()
 
     def mqevent(self, event, **kwargs):
         return GremlinFS.operations().mqevent(event, **kwargs)
+
+    def query(self, query, node = None, default = None):
+        return self.utils().query(query, node, default)
+
+    def eval(self, command, node = None, default = None):
+        return self.utils().eval(command, node, default)
 
     def config(self, key = None, default = None):
         return GremlinFS.operations().config(key, default)
@@ -3532,6 +3576,103 @@ class GremlinFSEdge(GremlinFSNode):
                 return None
 
 
+
+# Decorator/Adapter pattern
+class GremlinFSNodeWrapper(GremlinFSBase):
+
+    def __init__(self, node):
+        self.node = node
+
+    def __getattr__(self, attr):
+        return self.get(attr)
+
+    def all(self, prefix = None):
+
+        node = self.node
+
+        dsprefix = "ds"
+        if prefix:
+            dsprefix = "ds.%s" % (prefix)
+
+        existing = {}
+        existing.update(node.all(prefix))
+
+        datasources = {}
+        datasources.update(node.all(dsprefix))
+
+        props = {}
+
+        for key in existing:
+            if key and not key.startswith("ds."):
+                try:
+                    if key in datasources:
+                        ret, log, err = GremlinFS.operations().eval(
+                            datasources.get(key),
+                            self
+                        )
+                        if ret:
+                            props[key] = str(ret).strip()
+                    # else:
+                    elif key in existing:
+                        value = existing.get(key)
+                        if value:
+                            props[key] = str(value).strip()
+                except:
+                    logging.error(' GremlinFS: all exception ')
+                    traceback.print_exc()
+
+        return props
+
+    def keys(self, prefix = None):
+        return self.all(prefix).keys()
+
+    def has(self, key, prefix = None):
+        pass
+
+    def set(self, key, value, prefix = None):
+        pass
+
+    def get(self, key, default = None, prefix = None):
+
+        node = self.node
+
+        dsprefix = "ds"
+        if prefix:
+            dsprefix = "ds.%s" % (prefix)
+
+        existing = None
+        if node.has(key = key, prefix = prefix):
+            existing = node.get(key = key, default = default, prefix = prefix)
+
+        datasource = None
+        if node.has(key = key, prefix = dsprefix):
+            datasource = node.get(key = key, default = default, prefix = dsprefix)
+
+        prop = None
+
+        if datasource:
+            try:
+                ret, log, err = GremlinFS.operations().eval(
+                    datasource,
+                    self
+                )
+                if ret:
+                    prop = str(ret).strip()
+
+            except:
+                logging.error(' GremlinFS: get exception ')
+                traceback.print_exc()
+
+        else:
+            prop = existing
+
+        return prop
+
+    def property(self, name, default = None, prefix = None):
+        pass
+
+
+
 class GremlinFSUtils(GremlinFSBase):
 
     @classmethod
@@ -3621,11 +3762,104 @@ class GremlinFSUtils(GremlinFSBase):
     def g(self):
         return GremlinFS.operations().g()
 
+    def ro(self):
+        return GremlinFS.operations().ro()
+
     def mq(self):
         return GremlinFS.operations().mq()
 
     def mqevent(self, event, **kwargs):
         return GremlinFS.operations().mqevent(event, **kwargs)
+
+    def query(self, query, node = None, default = None):
+
+        if node and query:
+
+            # try:
+
+            pyexec = PyExec.instance(
+                environment={
+                    "g": self.ro(),
+                    "node": node,
+                    "config": self.config()
+                },
+                blacklist=[],
+                allowed=[
+                    # g.V()
+                    '^g\.V\(\)([a-zA-Z0-9\(\)\.\'\,])*$',
+                    # g.V().inE(config.get('in_label')).outV()
+                    '^g\.V\(\)([a-zA-Z0-9\(\)\#\:\.\,\-\_\'\"])*$',
+                    # g.V('#17:68').inE('in').outV()
+                    # g.V(node.get('id')).inE(config.get('in_label')).outV()
+                    '^g\.V\(([a-zA-Z0-9\(\) \#\:\.\,\-\_\'\"]*)\)([a-zA-Z0-9\(\)\#\:\.\,\-\_\'\"])*$',
+                ],
+                notallowed=[
+                    '\;',
+                    'addE',
+                    'addV',
+                    'property',
+                    'drop'
+                ]
+            )
+
+            ret, log, err = pyexec.pyeval(
+                query.strip()
+            )
+
+            if not ret:
+                return [] # , log, err
+
+            return ret # , log, err
+
+            # except:
+            #     logging.error(' GremlinFS: readFolder custom query exception ')
+            #     traceback.print_exc()
+            #     return [], None, None
+
+        elif default:
+            return default.valueMap(True).toList() # , None, None
+
+        return [] # , None, None
+
+    def eval(self, command, node = None, default = None):
+
+        if node and command:
+
+            # try:
+
+            pyexec = PyExec.instance(
+                environment={
+                    "g": self.ro(),
+                    "node": node,
+                    "config": self.config()
+                },
+                blacklist=[],
+                allowed=[
+                ],
+                notallowed=[
+                    '\;'
+                    'addE',
+                    'addV',
+                    'property',
+                    'drop'
+                ]
+            )
+
+            ret, log, err = pyexec.pyeval(
+                command
+            )
+
+            if not ret:
+                return default, log, err
+
+            return ret, log, err
+
+            # except:
+            #     logging.error(' GremlinFS: readFolder custom query exception ')
+            #     traceback.print_exc()
+            #     return default, None, None
+
+        return default, None, None
 
     def config(self, key = None, default = None):
         return GremlinFS.operations().config(key, default)
@@ -3678,6 +3912,7 @@ class GremlinFSOperations(Operations):
         **kwargs):
 
         self._g = None
+        self._ro = None
         self._mq = None
 
         self._config = None
@@ -3728,15 +3963,26 @@ class GremlinFSOperations(Operations):
         # logging.debug(' GremlinFS rabbitmq password: %s' % (str(self.rabbitmq_password)))
 
         self._g = None
+        self._ro = None
         self._mq = None
 
         self._config = None
 
         return self
 
-    def connection(self):
+    def connection(self, ro = False):
 
         graph = Graph()
+
+        if ro:
+            strategy = ReadOnlyStrategy() # .build().create()
+            ro = graph.traversal().withStrategies(strategy).withRemote(DriverRemoteConnection(
+                self.gremlin_url,
+                'g',
+                username = self.gremlin_username,
+                password = self.gremlin_password
+            ))
+            return ro
 
         g = graph.traversal().withRemote(DriverRemoteConnection(
             self.gremlin_url,
@@ -3784,6 +4030,16 @@ class GremlinFSOperations(Operations):
         self._g = g
 
         return self._g
+
+    def ro(self):
+
+        if self._ro:
+            return self._ro
+
+        ro = self.connection(True)
+        self._ro = ro
+
+        return self._ro
 
     def mq(self):
 
@@ -3894,6 +4150,12 @@ class GremlinFSOperations(Operations):
             logging.error(' GremlinFS: INBOUND AMQP/RABBIT ON MESSAGE EXCEPTION ')
             traceback.print_exc()
 
+    def query(self, query, node = None, default = None):
+        return self.utils().query(query, node, default)
+
+    def eval(self, command, node = None, default = None):
+        return self.utils().eval(command, node, default)
+
     def config(self, key = None, default = None):
 
         if self._config:
@@ -3941,6 +4203,7 @@ class GremlinFSOperations(Operations):
             "uuid_property": GremlinFSUtils.conf('uuid_property', 'uuid'),
             "name_property": GremlinFSUtils.conf('name_property', 'name'),
             "data_property": GremlinFSUtils.conf('data_property', 'data'),
+            "template_property": GremlinFSUtils.conf('template_property', 'template'),
 
             "default_uid": GremlinFSUtils.conf('default_uid', 1001),
             "default_gid": GremlinFSUtils.conf('default_gid', 1001),
@@ -4622,6 +4885,206 @@ class GremlinFS(object):
             GremlinFS.__operations = GremlinFSOperations()
 
         return GremlinFS.__operations 
+
+# 
+# https://softwareengineering.stackexchange.com/questions/191623/best-practices-for-execution-of-untrusted-code
+# https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
+# http://lucumr.pocoo.org/2011/2/1/exec-in-python/
+# 
+
+
+class PyExec(object):
+
+    @classmethod
+    def instance(clazz, environment={}, whitelist={}, blacklist=[], allowed=[], notallowed=[], defaults=None):
+        instance = clazz(environment=environment, whitelist=whitelist, blacklist=blacklist, allowed=allowed, notallowed=notallowed, defaults=defaults)
+        return instance
+
+    def __init__(self, environment={}, whitelist={}, blacklist=[], allowed=[], notallowed=[], defaults=None):
+        self.logger = logging.getLogger("PyExec")
+        if not defaults:
+            defaults = self.defaults()
+        allalloweds = self.allowed()
+        if allowed:
+            allalloweds.extend(allowed)
+        self.alloweds = []
+        for allowed in allalloweds:
+            self.alloweds.append(re.compile(allowed))
+        allnotalloweds = self.notallowed()
+        if notallowed:
+            allnotalloweds.extend(notallowed)
+        self.notalloweds = []
+        for notallowed in allnotalloweds:
+            self.notalloweds.append(re.compile(notallowed))
+        definitions = self.definitions(whitelist, blacklist, defaults)
+        self.globalenv = self.globals(environment, definitions)
+        self.localenv = self.locals(environment, definitions)
+
+    def defaults(self):
+        return {
+            "True": True,
+            "False": False,
+            "eval": eval,
+            "len": len
+        }
+
+    def allowed(self):
+        return []
+
+    def notallowed(self):
+        # Prevent using os, system and introspective __ objects
+        return [
+            '[\"\']+os[\"\']+',
+            '(os)?\.system',
+            '__[a-zA-Z]+__'
+        ]
+
+    def environment(self):
+        return self.localenv
+
+    def definitions(self, whitelist={}, blacklist=[], defaults=None):
+        definitions = {}
+        if defaults:
+            definitions = dict(definitions, **defaults)
+        if whitelist:
+            definitions = dict(definitions, **whitelist)
+        if blacklist:
+            for key in blacklist:
+                if key in definitions:
+                    del definitions[key]
+        return definitions
+
+    def globals(self, environment={}, definitions={}):
+        # Disable builtin functions, 
+        # place needed and safe builtins into defaults or whitelist
+        return {
+            "__builtins__": {}
+        }
+
+    def locals(self, environment={}, definitions={}):
+        locals = {}
+        if environment:
+            locals = dict(locals, **environment)
+        if definitions:
+            locals = dict(locals, **definitions)
+        return locals
+
+    # # https://stackoverflow.com/questions/3906232/python-get-the-print-output-in-an-exec-statement
+    # @contextlib.contextmanager
+    # def stdoutIO(stdout=None):
+    #     old = sys.stdout
+    #     if stdout is None:
+    #         stdout = StringIO.StringIO()
+    #     sys.stdout = stdout
+    #     yield stdout
+    #     sys.stdout = old
+
+    def pyeval(self, command):
+        ret = None
+        # with stdoutIO() as s:
+        # from cStringIO import StringIO
+        try:
+            # from StringIO import StringIO ## for Python 2
+            from cStringIO import StringIO
+        except ImportError:
+            from io import StringIO ## for Python 3
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        redirected_output = sys.stdout = StringIO()
+        redirected_error = sys.stderr = StringIO()
+        if not command:
+            # print "Empty line"
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+            return ret, redirected_output.getvalue(), redirected_error.getvalue()
+        if self.notalloweds:
+            for notallowed in self.notalloweds:
+                if notallowed.search(command):
+                    # print "Illegal line"
+                    sys.stdout = old_stdout
+                    sys.stderr = old_stderr
+                    return ret, redirected_output.getvalue(), redirected_error.getvalue()
+        if self.alloweds:
+            ok = False
+            for allowed in self.alloweds:
+                if allowed.search(command):
+                    ok = True
+            if not ok:
+                # print "Illegal line"
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+                return ret, redirected_output.getvalue(), redirected_error.getvalue()
+        try:
+            ret = eval(
+                command,
+                self.globalenv,
+                self.localenv
+            )
+        except:
+            # print "Exception"
+            traceback.print_exc()
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+            return ret, redirected_output.getvalue(), redirected_error.getvalue()
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        return ret, redirected_output.getvalue(), redirected_error.getvalue()
+
+    def pyexec(self, command):
+        # with stdoutIO() as s:
+        # from cStringIO import StringIO
+        try:
+            # from StringIO import StringIO ## for Python 2
+            from cStringIO import StringIO
+        except ImportError:
+            from io import StringIO ## for Python 3
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        redirected_output = sys.stdout = StringIO()
+        redirected_error = sys.stderr = StringIO()
+        if not command:
+            # print "Empty line"
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+            return None, redirected_output.getvalue(), redirected_error.getvalue()
+        if self.notalloweds:
+            for notallowed in self.notalloweds:
+                if notallowed.search(command):
+                    # print "Illegal line"
+                    sys.stdout = old_stdout
+                    sys.stderr = old_stderr
+                    return None, redirected_output.getvalue(), redirected_error.getvalue()
+        if self.alloweds:
+            ok = False
+            for allowed in self.alloweds:
+                if allowed.search(command):
+                    ok = True
+            if not ok:
+                # print "Illegal line"
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+                return None, redirected_output.getvalue(), redirected_error.getvalue()
+        try:
+            exec(
+                command,
+                self.globalenv,
+                self.localenv
+            )
+        except:
+            # print "Exception"
+            traceback.print_exc()
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+            return None, redirected_output.getvalue(), redirected_error.getvalue()
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        return None, redirected_output.getvalue(), redirected_error.getvalue()
+
+    def pyrun(self, command, execfn="eval"):
+        if execfn == "eval":
+            return self.pyeval(command)
+        elif execfn == "exec":
+            self.pyexec(command)
 
 
 
