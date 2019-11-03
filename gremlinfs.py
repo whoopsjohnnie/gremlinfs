@@ -1649,9 +1649,19 @@ class GremlinFSPath(GremlinFSBase):
 
             data = ""
 
+            label_config = node.labelConfig()
+
             template = None
+            readfn = None
+
+            data = node.readProperty(
+                self.config("data_property"),
+                "",
+                encoding = "base64"
+            )
 
             try:
+
                 templatenodes = node.follow(self.config("template_label"))
                 if templatenodes and len(templatenodes) >= 1:
                     template = templatenodes[0].readProperty(
@@ -1659,37 +1669,51 @@ class GremlinFSPath(GremlinFSBase):
                         "",
                         encoding = "base64"
                     )
+
                 elif node.hasProperty(self.config("template_property")):
                     template = node.getProperty(
                         self.config("template_property"),
                         ""
                     )
+
+                elif label_config and "template" in label_config:
+                    template = label_config["template"]
+
+                elif label_config and "readfn" in label_config:
+                    readfn = label_config["readfn"]
+
             except:
                 pass
 
-            if template:
 
-                if not template:
-                    return default
+            try:
 
-                import pystache
-                renderer = pystache.Renderer()
+                if template:
 
-                data = pystache.render(
-                    template, GremlinFSNodeWrapper(
-                        node = node
+                    import pystache
+                    renderer = pystache.Renderer()
+
+                    data = pystache.render(
+                        template, GremlinFSNodeWrapper(
+                            node = node
+                        )
                     )
-                )
 
-            else:
+                elif readfn:
 
-                data = node.readProperty(
-                    self.config("data_property"),
-                    "",
-                    encoding = "base64"
-                )
+                    data = readfn(
+                        node = node,
+                        wrapper = GremlinFSNodeWrapper(
+                            node = node
+                        ),
+                        data = data
+                    )
 
-            data = tobytes(data)
+            except:
+                pass
+
+            if data:
+                data = tobytes(data)
 
             if data and size > 0 and offset > 0:
                 return data[offset:offset + size]
@@ -1772,6 +1796,10 @@ class GremlinFSPath(GremlinFSBase):
         if self._path == "atpath":
             node = self.node().file()
 
+            label_config = node.labelConfig()
+
+            writefn = None
+
             old = node.readProperty(
                 self.config("data_property"),
                 None,
@@ -1799,6 +1827,26 @@ class GremlinFSPath(GremlinFSBase):
                 offset = offset,
                 encoding = "base64"
             )
+
+            try:
+
+                if label_config and "writefn" in label_config:
+                    writefn = label_config["writefn"]
+
+            except:
+                pass
+
+            try:
+
+                if writefn:
+
+                    writefn(
+                        node = node,
+                        data = data
+                    )
+
+            except:
+                pass
 
             return data
 
@@ -2205,6 +2253,23 @@ class GremlinFSNode(GremlinFSBase):
 
     @classmethod
     def label(clazz, name, label, fstype = "file", default = "vertex"):
+        if not name:
+            return default
+        if not label:
+            return default
+        for label_config in GremlinFS.operations().config("labels", []):
+            if "type" in label_config and label_config["type"] == fstype:
+                compiled = None
+                if "compiled" in label_config:
+                    compiled = label_config["compiled"]
+                else:
+                    compiled = re.compile(label_config["pattern"])
+
+                if compiled:
+                    if compiled.search(name):
+                        label = label_config.get("label", default)
+                        break
+
         return label
 
     @classmethod
@@ -2269,6 +2334,16 @@ class GremlinFSNode(GremlinFSBase):
 
     def utils(self):
         return GremlinFSUtils.utils()
+
+    def labelConfig(self):
+        node = self
+        config = None
+
+        for label_config in GremlinFS.operations().config("labels", []):
+            if "label" in label_config and label_config["label"] == node.get('label', None):
+                config = label_config
+
+        return config
 
     # 
 
@@ -2403,6 +2478,43 @@ class GremlinFSNode(GremlinFSBase):
             # )
         except:
             pass
+
+    def setProperties(self, properties, prefix = None):
+
+        node = self
+
+        existing = {}
+
+        existing.update(node.all(prefix))
+
+        if existing:
+            for key, value in existing.items():
+                if not key in properties:
+                    node.unsetProperty(
+                        key,
+                        prefix = prefix
+                    )
+
+        if properties:
+            for key, value in properties.items():
+                try:
+                    node.setProperty(
+                        key,
+                        value,
+                        prefix = prefix
+                    )
+                except:
+                    logging.error(' GremlinFS: setProperties exception ')
+                    traceback.print_exc()
+
+    def getProperties(self, prefix = None):
+
+        node = self
+
+        properties = {}
+        properties.update(node.all(prefix))
+
+        return properties
 
     def readProperty(self, name, default = None, encoding = None, prefix = None):
         return self.getProperty(name, default, encoding = encoding, prefix = prefix)
@@ -3806,12 +3918,18 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                             self
                         )
                         if ret:
-                            props[key] = str(ret).strip()
+                            # Mustache does not allow properties with '.' in the name
+                            # as '.' denotes field/object boundary. Therefore all mustache
+                            # given properties has to use '__' to indicated '.'
+                            props[key.replace(".", "__")] = str(ret).strip()
                     # else:
                     elif key in existing:
                         value = existing.get(key)
                         if value:
-                            props[key] = str(value).strip()
+                            # Mustache does not allow properties with '.' in the name
+                            # as '.' denotes field/object boundary. Therefore all mustache
+                            # given properties has to use '__' to indicated '.'
+                            props[key.replace(".", "__")] = str(value).strip()
                 except:
                     logging.error(' GremlinFS: all exception ')
                     traceback.print_exc()
@@ -3830,6 +3948,11 @@ class GremlinFSNodeWrapper(GremlinFSBase):
     def get(self, key, default = None, prefix = None):
 
         node = self.node
+
+        # Mustache does not allow properties with '.' in the name
+        # as '.' denotes field/object boundary. Therefore all mustache
+        # given properties has to use '__' to indicated '.'
+        key = key.replace("__", ".")
 
         dsprefix = "ds"
         if prefix:
@@ -4411,13 +4534,13 @@ class GremlinFSOperations(Operations):
 
         # Build label regexes
         if "labels" in config:
-            for pattern in config["labels"]:
-                if "pattern" in pattern:
+            for label_config in config["labels"]:
+                if "pattern" in label_config:
                     try:
-                        pattern["compiled"] = re.compile(pattern["pattern"])
+                        label_config["compiled"] = re.compile(label_config["pattern"])
                     except:
                         logging.error(' GremlinFS: failed to compile pattern %s ' % (
-                            pattern["pattern"]
+                            label_config["pattern"]
                         ))
                     pass
 
