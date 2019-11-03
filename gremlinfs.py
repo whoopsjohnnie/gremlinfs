@@ -4411,7 +4411,7 @@ class GremlinFSOperations(Operations):
             logging.info(data)
 
             self.mq().basic_publish(
-                exchange = '',
+                exchange = 'gfs-exchange',
                 routing_key = self.config("fs_id"),
                 body = json.dumps(
                     data, 
