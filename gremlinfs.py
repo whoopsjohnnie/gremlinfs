@@ -1694,9 +1694,11 @@ class GremlinFSPath(GremlinFSBase):
                     renderer = pystache.Renderer()
 
                     data = pystache.render(
-                        template, GremlinFSNodeWrapper(
-                            node = node
-                        )
+                        template, {
+                            "self": GremlinFSNodeWrapper(
+                                node = node
+                            )
+                        }
                     )
 
                 elif readfn:
@@ -1710,7 +1712,7 @@ class GremlinFSPath(GremlinFSBase):
                     )
 
             except:
-                pass
+                logging.error(' GremlinFS: readNode render exception ')
 
             if data:
                 data = tobytes(data)
@@ -2551,8 +2553,8 @@ class GremlinFSNode(GremlinFSBase):
 
                 env = {}
                 # env = self.config()
-                for prop, value in iteritems(self.config()):
-                    env[str(prop)] = str(value)
+                # for prop, value in iteritems(self.config()):
+                #     env[str(prop)] = str(value)
 
                 cwd = handlercwd
                 args = [handlerpath]
@@ -2585,8 +2587,90 @@ class GremlinFSNode(GremlinFSBase):
                     args.append("-v")
                     args.append(value)
 
+                nodes = {}
+                chainnodes = []
+                if chain and len(chain) > 0:
+                    for elem in chain:
+
+                        chainelem = {}
+                        # chaininnode = None
+                        # chaininnode = None
+                        chainoutnodew = None
+                        chainoutnodew = None
+                        chainlink = None
+                        chainlinkw = None
+
+                        if "innode" in elem:
+                            # chaininnode = elem.get('innode', None)
+                            # chaininnodew = GremlinFSNodeWrapper(
+                            #     node = chaininnode
+                            # )
+                            # chainelem["node"] = chaininnodew
+                            pass
+
+                        if "outnode" in elem:
+                            chainoutnode = elem.get('outnode', None)
+                            chainoutnodew = GremlinFSNodeWrapper(
+                                node = chainoutnode
+                            )
+                            chainelem["node"] = chainoutnodew
+
+                        if "link" in elem:
+                            chainlink = elem.get('link', None)
+                            chainlinkw = GremlinFSNodeWrapper(
+                                node = chainlink
+                            )
+                            chainelem["link"] = chainlinkw
+
+                        if chainoutnodew and chainlink and chainlink.has("name") and chainlink.has("label"):
+                            nodes["%s@%s" % (chainlink.get("name"), chainlink.get("label"))] = chainoutnodew
+
+                        elif chainoutnodew and chainlink and chainlink.has("name"):
+                            nodes[chainlink.get("name")] = chainoutnodew
+
+                        elif chainoutnodew and chainlink and chainlink.has("label"):
+                            nodes[chainlink.get("label")] = chainoutnodew
+
+                        chainnodes.append(chainelem)
+
+                data = node.getProperty(handler, default = None, encoding = None, prefix = None)
+
+                script = data
+
+                try:
+
+                    template = data
+                    if template:
+
+                        import pystache
+                        renderer = pystache.Renderer()
+
+                        templatectx = {
+                            "event": event,
+                            "property": property,
+                            "value": value,
+                            "self": GremlinFSNodeWrapper(
+                                node = node
+                            ),
+                            # "node": ...,
+                            "nodes": nodes,
+                            "chain": chainnodes
+                        }
+
+                        for idx, chainnode in enumerate(chainnodes):
+                            templatectx["chain%d" % (idx)] = chainnode
+
+                        script = pystache.render(
+                            template, templatectx
+                        )
+
+                except:
+                    logging.error(' GremlinFS: invoke handler render exception ')
+                    script = data
+
+                executable = "sh"
                 subprocess.call(
-                    args,
+                    [executable, '-c', script],
                     cwd = cwd,
                     env = env
                 )
@@ -2620,44 +2704,69 @@ class GremlinFSNode(GremlinFSBase):
                     data = data
                 )
 
-            if node and node.has("on.modified"):
-                node.invoke(
-                    handler = "on.modified",
-                    event = event,
-                    chain = chain,
-                    data = data
-                )
-
-            if node and node.has("on.change"):
-                node.invoke(
-                    handler = "on.change",
-                    event = event,
-                    chain = chain,
-                    data = data
-                )
-
             # Check if this event should be propagated
             if node and propagate:
                 inedges = node.edges(None, True)
                 for inedge in inedges:
                     if inedge:
+
                         innode = inedge.node(False)
-                        if innode and inedge.has("name"):
-                            chain.insert(0, innode)
+                        outnode = inedge.node(True)
+
+                        if inedge.has("name") and inedge.has("label"):
+                            newchain = chain.copy()
+                            newchain.insert(0, {
+                                "innode": innode,
+                                "outnode": outnode,
+                                "link": inedge
+                            })
+                            innode.event(
+                                event = "%s@%s.%s" % (inedge.get("name"), inedge.get("label"), event),
+                                chain = newchain,
+                                data = data,
+                                propagate = propagate
+                            )
+
+                        if inedge.has("name"):
+                            newchain = chain.copy()
+                            newchain.insert(0, {
+                                "innode": innode,
+                                "outnode": outnode,
+                                "link": inedge
+                            })
                             innode.event(
                                 event = "%s.%s" % (inedge.get("name"), event),
-                                chain = chain,
+                                chain = newchain,
                                 data = data,
                                 propagate = propagate
                             )
-                        elif innode and inedge.has("label"):
-                            chain.insert(0, innode)
+
+                        if inedge.has("label"):
+                            newchain = chain.copy()
+                            newchain.insert(0, {
+                                "innode": innode,
+                                "outnode": outnode,
+                                "link": inedge
+                            })
                             innode.event(
                                 event = "%s.%s" % (inedge.get("label"), event),
-                                chain = chain,
+                                chain = newchain,
                                 data = data,
                                 propagate = propagate
                             )
+
+                        newchain = chain.copy()
+                        newchain.insert(0, {
+                            "innode": innode,
+                            "outnode": outnode,
+                            "link": inedge
+                        })
+                        innode.event(
+                            event = "%s.%s" % ("x", event),
+                            chain = newchain,
+                            data = data,
+                            propagate = propagate
+                        )
 
         except:
             logging.error(' GremlinFS: node event exception ')
@@ -3921,7 +4030,8 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                             # Mustache does not allow properties with '.' in the name
                             # as '.' denotes field/object boundary. Therefore all mustache
                             # given properties has to use '__' to indicated '.'
-                            props[key.replace(".", "__")] = str(ret).strip()
+                            # props[key.replace(".", "__")] = str(ret).strip()
+                            props[key] = str(ret).strip()
                     # else:
                     elif key in existing:
                         value = existing.get(key)
@@ -3929,7 +4039,8 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                             # Mustache does not allow properties with '.' in the name
                             # as '.' denotes field/object boundary. Therefore all mustache
                             # given properties has to use '__' to indicated '.'
-                            props[key.replace(".", "__")] = str(value).strip()
+                            # props[key.replace(".", "__")] = str(value).strip()
+                            props[key] = str(value).strip()
                 except:
                     logging.error(' GremlinFS: all exception ')
                     traceback.print_exc()
@@ -4098,7 +4209,8 @@ class GremlinFSUtils(GremlinFSBase):
             pyexec = PyExec.instance(
                 environment={
                     "g": self.ro(),
-                    "node": node,
+                    "self": node,
+                    # "node": node,
                     "config": self.config()
                 },
                 blacklist=[],
@@ -4148,7 +4260,8 @@ class GremlinFSUtils(GremlinFSBase):
             pyexec = PyExec.instance(
                 environment={
                     "g": self.ro(),
-                    "node": node,
+                    "self": node,
+                    # "node": node,
                     "config": self.config()
                 },
                 blacklist=[],
@@ -4459,7 +4572,7 @@ class GremlinFSOperations(Operations):
                 self.mqonevent(
                     node = node,
                     event = event,
-                    chain = [node],
+                    chain = [],
                     data = json,
                     propagate = True
                 )

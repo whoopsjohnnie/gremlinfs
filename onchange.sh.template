@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -e
+set -u
+set -o pipefail
+
+echo "Node:"
+  echo "UUID: {{self.uuid}}"
+  echo "Name: {{self.name}}"
+  echo "Event: {{event}}"
+  echo "Property: {{property}}"
+  echo "Value: {{value}}"
+
+echo "Chain:" 
+{{#chain}}
+  echo "UUID: {{uuid}}"
+  echo "Name: {{name}}"
+{{/chain}}

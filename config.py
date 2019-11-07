@@ -13,7 +13,7 @@ def render_json(node, wrapper, data = None):
         from flatten_json import unflatten
 
         jsondata = wrapper.all(prefix = "data")
-        jsondata = unflatten(jsondata, '.')
+        jsondata = unflatten(jsondata, '__') # '.')
 
         data = json.dumps(
             jsondata, 
@@ -37,7 +37,7 @@ def write_json(node, data):
         from flatten_json import flatten
 
         jsondata = json.loads(data)
-        jsondata = flatten(jsondata, '.')
+        jsondata = flatten(jsondata, '__') # '.')
 
         node.setProperties(jsondata, 'data')
 
@@ -60,7 +60,7 @@ def write_yaml(node, data):
         from flatten_json import flatten
 
         yamldata = yaml.safe_load(data)
-        yamldata = flatten(yamldata, '.')
+        yamldata = flatten(yamldata, '__') # '.')
 
         node.setProperties(yamldata, 'data')
 
