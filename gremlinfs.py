@@ -56,24 +56,56 @@ logging.basicConfig(level=config.gremlinfs['log_level'])
 
 
 
+# 
+# https://pika.readthedocs.io/en/stable/examples/blocking_consume_recover_multiple_hosts.html
+# 
 def amqp_rcve(operations = None):
 
-    mqconnection = operations.mqconnection()
-    mqchannel = mqconnection.channel()
+    import time
 
-    mqchannel.queue_declare(
-        queue = operations.config("fs_id")
-    )
+    reconnect = True
 
-    mqchannel.basic_consume(
-        queue = operations.config("fs_id"),
-        auto_ack = True,
-        on_message_callback = operations.mqonmessage
-    )
+    while(reconnect):
 
-    mqchannel.start_consuming()
+        try:
+            logging.info(' GremlinFS: Connecting to AMQP ')
 
-    mqconnection.close()
+            mqconnection = operations.mqconnection()
+            mqchannel = mqconnection.channel()
+
+            mqchannel.queue_declare(
+                queue = operations.config("fs_id")
+            )
+
+            mqchannel.basic_consume(
+                queue = operations.config("fs_id"),
+                auto_ack = True,
+                on_message_callback = operations.mqonmessage
+            )
+
+            mqchannel.start_consuming()
+
+            mqconnection.close()
+
+        except pika.exceptions.ConnectionClosedByBroker:
+            # Uncomment this to make the example not attempt recovery
+            # from server-initiated connection closure, including
+            # when the node is stopped cleanly
+            #
+            # break
+            time.sleep(10)
+            continue
+
+        # Do not recover on channel errors
+        except pika.exceptions.AMQPChannelError as err:
+            logging.error(' GremlinFS: Caught an AMQP connection error: {} '.format(err))
+            break
+
+        # Recover on all other connection errors
+        except pika.exceptions.AMQPConnectionError:
+            logging.info(' GremlinFS: AMQP connection was closed, reconnecting ')
+            time.sleep(10)
+            continue
 
 
 
@@ -4541,43 +4573,45 @@ class GremlinFSOperations(Operations):
 
     def mqevent(self, event, **kwargs):
 
+#         try:
+
+        # import json
+        import simplejson as json
+
+        data = {
+            "path": kwargs.get("path", {}).get("full", None),
+            "node": {},
+            "parent": {},
+            "event": event,
+            "property": kwargs.get("property", None),
+            "value": kwargs.get("value", None),
+            "mode": kwargs.get("mode", None),
+            "offset": kwargs.get("offset", None),
+            "encoding": kwargs.get("encoding", None),
+            "ine": kwargs.get("ine", None)
+        }
+
+        node = kwargs.get("node", None)
+        if node:
+            data["node"]["id"] = node.get("id", None)
+            data["node"]["uuid"] = node.get("uuid", None)
+            data["node"]["name"] = node.get("name", None)
+            data["node"]["label"] = node.get("label", None)
+
+        parent = kwargs.get("parent", None)
+        if parent:
+            data["parent"]["id"] = parent.get("id", None)
+            data["parent"]["uuid"] = parent.get("uuid", None)
+            data["parent"]["name"] = parent.get("name", None)
+            data["parent"]["label"] = parent.get("label", None)
+
+        logging.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT ')
+        logging.info(data)
+
         try:
 
-            # import json
-            import simplejson as json
-
-            data = {
-                "path": kwargs.get("path", {}).get("full", None),
-                "node": {},
-                "parent": {},
-                "event": event,
-                "property": kwargs.get("property", None),
-                "value": kwargs.get("value", None),
-                "mode": kwargs.get("mode", None),
-                "offset": kwargs.get("offset", None),
-                "encoding": kwargs.get("encoding", None),
-                "ine": kwargs.get("ine", None)
-            }
-
-            node = kwargs.get("node", None)
-            if node:
-                data["node"]["id"] = node.get("id", None)
-                data["node"]["uuid"] = node.get("uuid", None)
-                data["node"]["name"] = node.get("name", None)
-                data["node"]["label"] = node.get("label", None)
-
-            parent = kwargs.get("parent", None)
-            if parent:
-                data["parent"]["id"] = parent.get("id", None)
-                data["parent"]["uuid"] = parent.get("uuid", None)
-                data["parent"]["name"] = parent.get("name", None)
-                data["parent"]["label"] = parent.get("label", None)
-
-            logging.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT ')
-            logging.info(data)
-
             self.mq().basic_publish(
-                exchange = 'gfs-exchange',
+                exchange = self.config("mq_exchange"), # 'gfs-exchange',
                 routing_key = self.config("fs_id"),
                 body = json.dumps(
                     data, 
@@ -4586,9 +4620,47 @@ class GremlinFSOperations(Operations):
                 )
             )
 
-        except:
-            logging.error(' GremlinFS: MQ/AMQP send exception ')
-            traceback.print_exc()
+        except pika.exceptions.ConnectionClosedByBroker:
+
+            logging.info(' GremlinFS: Outbound AMQP/RABBIT event, connection was closed, retry ')
+
+            self._mq = None
+
+            self.mq().basic_publish(
+                exchange = self.config("mq_exchange"), # 'gfs-exchange',
+                routing_key = self.config("fs_id"),
+                body = json.dumps(
+                    data, 
+                    indent=4, 
+                    sort_keys=False
+                )
+            )
+
+        # Do not recover on channel errors
+        except pika.exceptions.AMQPChannelError as err:
+            logging.error(' GremlinFS: Outbound AMQP/RABBIT event error: {} '.format(err))
+            return
+
+        # Recover on all other connection errors
+        except pika.exceptions.AMQPConnectionError:
+
+            logging.info(' GremlinFS: Outbound AMQP/RABBIT event, connection was closed, retry ')
+
+            self._mq = None
+
+            self.mq().basic_publish(
+                exchange = self.config("mq_exchange"), # 'gfs-exchange',
+                routing_key = self.config("fs_id"),
+                body = json.dumps(
+                    data, 
+                    indent=4, 
+                    sort_keys=False
+                )
+            )
+
+#         except:
+#             logging.error(' GremlinFS: MQ/AMQP send exception ')
+#             traceback.print_exc()
 
     def mqonevent(self, node, event, chain = [], data = {}, propagate = True):
         logging.info(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT ')
@@ -4663,6 +4735,8 @@ class GremlinFSOperations(Operations):
             "rabbitmq_port": self.rabbitmq_port,
             # "rabbitmq_username": self.rabbitmq_username,
             "rabbitmq_password": self.rabbitmq_password,
+
+            "mq_exchange": GremlinFSUtils.conf('mq_exchange', 'gfs-exchange'),
 
             "log_level": GremlinFSUtils.conf('log_level', logging.DEBUG),
 
