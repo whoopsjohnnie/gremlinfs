@@ -89,6 +89,8 @@ gremlinfs = dict(
 
     vertex_folder = '.V',
     edge_folder = '.E',
+    in_edge_folder = 'IN', # 'EI',
+    out_edge_folder = 'OUT', # 'EO',
 
     uuid_property = 'uuid',
     name_property = 'name',
