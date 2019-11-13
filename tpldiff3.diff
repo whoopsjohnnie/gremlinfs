@@ -1,0 +1,1009 @@
+diff --git a/config.py b/config.py
+index a864976..055c672 100644
+--- a/config.py
++++ b/config.py
+@@ -3,7 +3,7 @@ import logging
+ 
+ gremlinfs = dict(
+ 
+-    log_level = logging.INFO,
++    log_level = logging.INFO, # logging.DEBUG
+ 
+     fs_id = "gfs1",
+     fs_root = None,
+@@ -23,9 +23,116 @@ gremlinfs = dict(
+     uuid_property = 'uuid',
+     name_property = 'name',
+     data_property = 'data',
++    render_property = 'render',
++    template_property = 'template',
++    mapping_property = 'mapping',
++    query_property = 'query',
++    log_property = 'log',
++    err_property = 'err',
+ 
+     default_uid = 0,
+     default_gid = 0,
+     default_mode = 0o644,
+ 
++    # 
++    labels = [{
++        "name": "dockerfile",
++        "label": "dockerfile",
++        "type": "file",
++        "pattern": "^.*Dockerfile.*$",
++        "target": {
++            "type": "file"
++        },
++        "match": {
++            "type": "property",
++            "property": "name",
++            "pattern": {
++                "type": "regex",
++                "pattern": "^.*Dockerfile.*$",
++            }
++        },
++        "template": {
++        },
++        "properties": [{
++            "name": "from",
++            "match": {
++                "type": "property",
++                "property": "data",
++                "pattern": ""
++            }
++        }]
++    }, {
++        "name": "json",
++        "label": "json",
++        "type": "file",
++        "pattern": "^.*\.json$",
++        "target": {
++            "type": "file"
++        },
++        "match": {
++            "type": "property",
++            "property": "name",
++            "pattern": {
++                "type": "regex",
++                "pattern": "^.*\.json$",
++            }
++        },
++        "template": {
++        },
++        "properties": []
++    }, {
++        "name": "yaml",
++        "label": "yaml",
++        "type": "file",
++        "pattern": "^.*\.yaml$",
++        "target": {
++            "type": "file"
++        },
++        "match": {
++            "type": "property",
++            "property": "name",
++            "pattern": {
++                "type": "regex",
++                "pattern": "^.*\.yaml$",
++            }
++        },
++        "template": {
++        },
++        "properties": []
++    }, {
++        "name": "group",
++        "label": "group",
++        "type": "folder",
++        "default": True,
++        "pattern": ".*",
++        "target": {
++            "type": "folder"
++        },
++        "match": {
++            "type": "property",
++            "property": "name",
++            "pattern": {
++                "type": "regex",
++                "pattern": ".*",
++            }
++        },
++    }, {
++        "name": "vertex",
++        "label": "vertex",
++        "type": "file",
++        "default": True,
++        "pattern": ".*",
++        "target": {
++            "type": "file"
++        },
++        "match": {
++            "type": "property",
++            "property": "name",
++            "pattern": {
++                "type": "regex",
++                "pattern": ".*",
++            }
++        },
++    }],
++
+ )
+diff --git a/gremlinfs.py b/gremlinfs.py
+index d89e7eb..57d846e 100644
+--- a/gremlinfs.py
++++ b/gremlinfs.py
+@@ -24,6 +24,10 @@ import contextlib
+ # 
+ from time import time
+ 
++import json
++import yaml
++from jproperties import Properties
++
+ try:
+     from StringIO import StringIO
+ except ImportError:
+@@ -52,6 +56,8 @@ import pika
+ # 
+ # 
+ import config
++# import template
++import pattern
+ 
+ 
+ 
+@@ -524,12 +530,21 @@ class GremlinFSPath(GremlinFSBase):
+     def g(self):
+         return GremlinFS.operations().g()
+ 
++    def ro(self):
++        return GremlinFS.operations().ro()
++
+     def mq(self):
+         return GremlinFS.operations().mq()
+ 
+     def mqsend(self, message, **kwargs):
+         return GremlinFS.operations().mqsend(message, **kwargs)
+ 
++    def query(self, query, node = None, default = None):
++        return self.utils().query(query, node, default)
++
++    def eval(self, command, node = None, default = None):
++        return self.utils().eval(command, node, default)
++
+     def config(self, key = None, default = None):
+         return GremlinFS.operations().config(key, default)
+ 
+@@ -1732,6 +1747,84 @@ class GremlinFSPath(GremlinFSBase):
+         if self._path == "atpath":
+             node = self.node().file()
+ 
++            data = ""
++
++            # render = False
++            # dynamic = True
++            # template = None
++
++            # if node.hasProperty(self.config("render_property")) and \
++            #    node.getProperty(self.config("render_property")) == "true":
++            #     render = True
++
++            # if node.hasProperty(self.config("dynamic_property")) and \
++            #    node.getProperty(self.config("dynamic_property")) == "false":
++            #     dynamic = False
++
++            # if node.hasProperty(self.config("template_property")):
++            #     template = node.getProperty(
++            #         self.config("template_property"),
++            #         ""
++            #     )
++            #     template = string.Template(template)
++
++            # if render:
++
++            #     # TODO: Total hack
++            #     # JSON is a special type that sets properties on the node.
++            #     # This should be extracted into schema/type defs
++            #     if node.get("label") == "json":
++            #         try:
++
++            #             import json
++            #             from flatten_json import unflatten
++
++            #             jsondata = node.templateProperties(
++            #                 None, 
++            #                 'data'
++            #             )
++            #             jsondata = unflatten(jsondata, '.')
++            #             data = json.dumps(
++            #                 jsondata, 
++            #                 indent=4, 
++            #                 sort_keys=False
++            #             )
++
++            #         except:
++            #             logging.error(' GremlinFS: readNode JSON exception ')
++            #             traceback.print_exc()
++
++            # elif template:
++
++            #     if not template:
++            #         return default
++
++            #     result = re.findall(template.pattern, template.template)
++            #     tokens = [r[1] for r in result]
++            #     subs = {}
++
++            #     properties = node.templateProperties(
++            #         tokens
++            #     )
++
++            #     for token in tokens:
++            #         if token and len(token) > 0:
++            #             try:
++            #                 subs[token] = properties.get(
++            #                     token,
++            #                     None
++            #                 )
++            #             except:
++            #                 subs[token] = ""
++
++            #     if subs:
++            #         data = template.substitute(**subs)
++
++            #     else:
++            #         data = template.substitute()
++
++            # else:
++
+             data = node.readProperty(
+                 self.config("data_property"),
+                 "",
+@@ -1769,6 +1862,12 @@ class GremlinFSPath(GremlinFSBase):
+ 
+         elif self._path == "vertex_property":
+             node = GremlinFSUtils.found( self.node() )
++            # !! This must be converted
++            # perhaps we can convert to binary at the bottom here
++            # same for writenode
++            # ie read/write note takes binary. returns binary and 
++            # get/set/read/write/property takes and returns string, howewver then we have 
++            # to handle the offset/length here and not in read/wrote/properteues
+             data = node.readProperty(
+                 self._vertexproperty,
+                 ""
+@@ -1821,6 +1920,19 @@ class GremlinFSPath(GremlinFSBase):
+         if self._path == "atpath":
+             node = self.node().file()
+ 
++            # render = False
++            # dynamic = True
++            # template = None
++
++            # if node.hasProperty(self.config("render_property")) and \
++            #    node.getProperty(self.config("render_property")) == "true":
++            #     render = True
++
++            # if node.hasProperty(self.config("dynamic_property")) and \
++            #    node.getProperty(self.config("dynamic_property")) == "false":
++            #     dynamic = False
++
++            # def irepl(clazz, old, data, index = 0):
+             old = node.readProperty(
+                 self.config("data_property"),
+                 None,
+@@ -1849,6 +1961,63 @@ class GremlinFSPath(GremlinFSBase):
+                 encoding = "base64"
+             )
+ 
++            # # TODO: Total hack
++            # # JSON is a special type that sets properties on the node.
++            # # This should be extracted into schema/type defs
++            # if dynamic and node.get("label") == "json":
++            #     try:
++
++            #         import json
++            #         from flatten_json import flatten
++
++            #         jsondata = json.loads(data)
++            #         jsondata = flatten(jsondata, '.')
++
++            #         node.setProperties(jsondata, 'data')
++
++            #     except:
++            #         logging.error(' GremlinFS: writeNode JSON exception ')
++            #         traceback.print_exc()
++
++            # # TODO: Total hack
++            # # YAML is a special type that sets properties on the node.
++            # # This should be extracted into schema/type defs
++            # elif dynamic and node.get("label") == "yaml":
++            #     try:
++
++            #         import yaml
++            #         from flatten_json import flatten
++
++            #         yamldata = yaml.safe_load(data)
++            #         yamldata = flatten(yamldata, '.')
++
++            #         node.setProperties(yamldata, 'data')
++
++            #     except:
++            #         logging.error(' GremlinFS: writeNode YAML exception ')
++            #         traceback.print_exc()
++
++            # # TODO: Total hack
++            # # YAML is a special type that sets properties on the node.
++            # # This should be extracted into schema/type defs
++            # elif dynamic and node.get("label") == "properties":
++            #     try:
++
++            #         from jproperties import Properties
++            #         from flatten_json import flatten
++
++            #         p = Properties()
++            #         p.load(data, "utf-8")
++            #         propdata = p.properties
++
++            #         propdata = flatten(propdata, '.')
++
++            #         node.setProperties(propdata, 'data')
++
++            #     except:
++            #         logging.error(' GremlinFS: writeNode properties exception ')
++            #         traceback.print_exc()
++
+             return data
+ 
+         # elif self._path == "vertex_labels":
+@@ -2254,6 +2423,42 @@ class GremlinFSNode(GremlinFSBase):
+ 
+     @classmethod
+     def label(clazz, name, label, fstype = "file", default = "vertex"):
++        if not name:
++            return default
++        if not label:
++            return default
++        for pattern in GremlinFS.operations().config("labels"):
++            if "type" in pattern and pattern["type"] == fstype:
++                compiled = None
++                if "compiled" in pattern:
++                    compiled = pattern["compiled"]
++                else:
++                    compiled = re.compile(pattern["pattern"])
++
++                #     # matcher = re.match(
++                #     #     pattern["pattern"],
++                #     #     name
++                #     # )
++                #     # matcher = re.match(
++                #     #     r"^.*Dockerfile.*$",
++                #     #     name
++                #     # )
++                #     # if matcher:
++                #     if notallowed.search(pattern["compiled"]):
++                #         logging.error(" *** pattern MATCH *** ")
++                #         label = pattern.get("label", default)
++                #         logging.error(label)
++                #         break
++                #     else:
++                #         logging.error(" *** pattern NO MATCH *** ")
++                # el
++                # if "pattern" in pattern:
++                #     compiled = re.compile(pattern["pattern"])
++                if compiled:
++                    if compiled.search(name):
++                        label = pattern.get("label", default)
++                        break
++
+         return label
+ 
+     @classmethod
+@@ -2298,12 +2503,21 @@ class GremlinFSNode(GremlinFSBase):
+     def g(self):
+         return GremlinFS.operations().g()
+ 
++    def ro(self):
++        return GremlinFS.operations().ro()
++
+     def mq(self):
+         return GremlinFS.operations().mq()
+ 
+     def mqsend(self, message, **kwargs):
+         return GremlinFS.operations().mqsend(message, **kwargs)
+ 
++    def query(self, query, node = None, default = None):
++        return self.utils().query(query, node, default)
++
++    def eval(self, command, node = None, default = None):
++        return self.utils().eval(command, node, default)
++
+     def config(self, key = None, default = None):
+         return GremlinFS.operations().config(key, default)
+ 
+@@ -2441,12 +2655,104 @@ class GremlinFSNode(GremlinFSBase):
+         except:
+             pass
+ 
++    def setProperties(self, properties, prefix = None):
++
++        node = self
++
++        existing = {}
++
++        existing.update(node.all(prefix))
++
++        if existing:
++            for key, value in existing.items():
++                if not key in properties:
++                    node.unsetProperty(
++                        key,
++                        prefix = prefix
++                    )
++
++        if properties:
++            for key, value in properties.items():
++                try:
++                    node.setProperty(
++                        key,
++                        value,
++                        prefix = prefix
++                    )
++                except:
++                    logging.error(' GremlinFS: setProperties exception ')
++                    traceback.print_exc()
++
++    def getProperties(self, prefix = None):
++
++        node = self
++
++        properties = {}
++        properties.update(node.all(prefix))
++
++        try:
++            pnode = self.follow("properties")
++            if pnode:
++                properties.update(pnode.all(prefix))
++        except:
++            pass
++
++        return properties    
++
+     def readProperty(self, name, default = None, encoding = None, prefix = None):
+         return self.getProperty(name, default, encoding = encoding, prefix = prefix)
+ 
+     def writeProperty(self, name, data, encoding = None, prefix = None):
+         return self.setProperty(name, data, encoding = encoding, prefix = prefix)
+ 
++    def templateProperties(self, properties, prefix = None):
++
++        node = self
++
++        dsprefix = "ds"
++        if prefix:
++            dsprefix = "ds.%s" % (prefix)
++
++        existing = {}
++        existing.update(node.all(prefix))
++
++        datasources = {}
++        datasources.update(node.all(dsprefix))
++
++        try:
++            pnode = self.follow("properties")
++            if pnode:
++                existing.update(pnode.all(prefix))
++                datasources.update(pnode.all(dsprefix))
++        except:
++            pass
++
++        if not properties:
++            properties = existing
++
++        tproperties = {}
++        # for key, value in properties.items():
++        for key in properties:
++            if key and not key.startswith("ds."):
++                try:
++                    if key in datasources:
++                        ret, log, err = GremlinFS.operations().eval(
++                            datasources.get(key),
++                            self
++                        )
++                        if ret:
++                            tproperties[key] = str(ret).strip()
++                    # else:
++                    elif key in existing:
++                        value = existing.get(key)
++                        if value:
++                            tproperties[key] = str(value).strip()
++                except:
++                    logging.error(' GremlinFS: templateProperties exception ')
++                    traceback.print_exc()
++
++        return tproperties
++
+ 
+ 
+ class GremlinFSVertex(GremlinFSNode):
+@@ -3140,6 +3446,35 @@ class GremlinFSVertex(GremlinFSNode):
+ 
+             # txn = self.graph().tx()
+ 
++                    
++
++                    # {
++                    #     'V': str(newfolder.get("id")),
++                    #     'has': {
++                    #         'uuid': str(newfolder.get("uuid")),
++                    #         'type': 'group',
++                    #         'filesystem': self.config("fs_id")
++                    #     },
++                    #     'inE': self.config("in_label"),
++                    #     'outV': True
++                    # }
++
++                # .property(
++                #     'query', json.dumps([{
++                #         'V': str(newfolder.get("id"))
++                #     }, {
++                #         'has': {
++                #             'uuid': str(newfolder.get("uuid")),
++                #             'type': self.config("folder_label"),
++                #             'filesystem': self.config("fs_id")
++                #         }
++                #     }, {
++                #         'inE': self.config("in_label")
++                #     }, {
++                #         'outV': None
++                #     }])
++                # )
++
+             GremlinFSVertex.fromV(
+                 self.g().V(
+                     newfolder.get("id")
+@@ -3475,12 +3810,143 @@ class GremlinFSUtils(GremlinFSBase):
+     def g(self):
+         return GremlinFS.operations().g()
+ 
++    def ro(self):
++        return GremlinFS.operations().ro()
++
+     def mq(self):
+         return GremlinFS.operations().mq()
+ 
+     def mqsend(self, message, **kwargs):
+         return GremlinFS.operations().mqsend(message, **kwargs)
+ 
++    def query(self, query, node = None, default = None):
++
++        if node and query:
++
++            # try:
++
++            pyexec = PyExec.instance(
++                environment={
++                    "g": self.ro(),
++                    "node": node,
++                    "config": self.config()
++                },
++                blacklist=[],
++                allowed=[
++                    # g.V()
++                    '^g\.V\(\)([a-zA-Z0-9\(\)\.\'\,])*$',
++                    # g.V().inE(config.get('in_label')).outV()
++                    '^g\.V\(\)([a-zA-Z0-9\(\)\#\:\.\,\-\_\'\"])*$',
++                    # g.V('#17:68').inE('in').outV()
++                    # g.V(node.get('id')).inE(config.get('in_label')).outV()
++                    '^g\.V\(([a-zA-Z0-9\(\) \#\:\.\,\-\_\'\"]*)\)([a-zA-Z0-9\(\)\#\:\.\,\-\_\'\"])*$',
++                ],
++                notallowed=[
++                    '\;',
++                    'addE',
++                    'addV',
++                    'property',
++                    'drop'
++                ]
++            )
++            
++            ret, log, err = pyexec.pyeval(
++                query.strip()
++            )
++
++            # logging.error( " QUERY " )
++            # logging.error( ret )
++            # logging.error( log )
++            # logging.error( err )
++
++            if not ret:
++                return [] # , log, err
++            
++            return ret # , log, err
++
++            # g = self.g()
++            # for part in query:
++            #     if 'V' in part:
++            #         if part['V']:
++            #             g = g.V(part['V'])
++            #         else:
++            #             g = g.V()
++            #     elif 'has' in part:
++            #         for key in part['has']:
++            #             g = g.has(key, part['has'][key])
++            #     elif 'inE' in part:
++            #         if part['inE']:
++            #             g = g.inE(part['inE'])
++            #         else:
++            #             g = g.inE()
++            #     elif 'outE' in part:
++            #         if part['outE']:
++            #             g = g.outE(part['outE'])
++            #         else:
++            #             g = g.outE()
++            #     elif 'inV' in part:
++            #         if part['inV']:
++            #             g = g.inV(part['inV'])
++            #         else:
++            #             g = g.inV()
++            #     elif 'outV' in part:
++            #         if part['outV']:
++            #             g = g.outV(part['outV'])
++            #         else:
++            #             g = g.outV()
++            # 
++            # return g.valueMap(True).toList(), None, None
++
++            # except:
++            #     logging.error(' GremlinFS: readFolder custom query exception ')
++            #     traceback.print_exc()
++            #     return [], None, None
++
++        elif default:
++            return default.valueMap(True).toList() # , None, None
++
++        return [] # , None, None
++
++    def eval(self, command, node = None, default = None):
++
++        if node and command:
++
++            # try:
++
++            pyexec = PyExec.instance(
++                environment={
++                    "g": self.ro(),
++                    "node": node,
++                    "config": self.config()
++                },
++                blacklist=[],
++                allowed=[
++                ],
++                notallowed=[
++                    '\;'
++                    'addE',
++                    'addV',
++                    'property',
++                    'drop'
++                ]
++            )
++
++            ret, log, err = pyexec.pyeval(
++                command
++            )
++
++            if not ret:
++                return default, log, err
++
++            return ret, log, err
++
++            # except:
++            #     logging.error(' GremlinFS: readFolder custom query exception ')
++            #     traceback.print_exc()
++            #     return default, None, None
++
++        return default, None, None
++
+     def config(self, key = None, default = None):
+         return GremlinFS.operations().config(key, default)
+ 
+@@ -3532,6 +3998,7 @@ class GremlinFSOperations(Operations):
+         **kwargs):
+ 
+         self._g = None
++        self._ro = None
+         self._mq = None
+ 
+         self._config = None
+@@ -3582,16 +4049,27 @@ class GremlinFSOperations(Operations):
+         # logging.debug(' GremlinFS rabbitmq password: %s' % (str(self.rabbitmq_password)))
+ 
+         self._g = None
++        self._ro = None
+         self._mq = None
+ 
+         self._config = None
+ 
+         return self
+ 
+-    def connection(self):
++    def connection(self, ro = False):
+ 
+         graph = Graph()
+ 
++        if ro:
++            strategy = ReadOnlyStrategy() # .build().create()
++            ro = graph.traversal().withStrategies(strategy).withRemote(DriverRemoteConnection(
++                self.gremlin_url,
++                'g',
++                username = self.gremlin_username,
++                password = self.gremlin_password
++            ))
++            return ro
++
+         g = graph.traversal().withRemote(DriverRemoteConnection(
+             self.gremlin_url,
+             'g',
+@@ -3639,6 +4117,16 @@ class GremlinFSOperations(Operations):
+ 
+         return self._g
+ 
++    def ro(self):
++
++        if self._ro:
++            return self._ro
++
++        ro = self.connection(True)
++        self._ro = ro
++
++        return self._ro
++
+     def mq(self):
+ 
+         if self._mq:
+@@ -3704,6 +4192,12 @@ class GremlinFSOperations(Operations):
+             logging.error(' GremlinFS: MQ/AMQP send exception ')
+             traceback.print_exc()
+ 
++    def query(self, query, node = None, default = None):
++        return self.utils().query(query, node, default)
++
++    def eval(self, command, node = None, default = None):
++        return self.utils().eval(command, node, default)
++
+     def config(self, key = None, default = None):
+ 
+         if self._config:
+@@ -3751,6 +4245,13 @@ class GremlinFSOperations(Operations):
+             "uuid_property": GremlinFSUtils.conf('uuid_property', 'uuid'),
+             "name_property": GremlinFSUtils.conf('name_property', 'name'),
+             "data_property": GremlinFSUtils.conf('data_property', 'data'),
++            "render_property": GremlinFSUtils.conf('render_property', 'render'),
++            "dynamic_property": GremlinFSUtils.conf('dynamic_property', 'dynamic'),
++            "template_property": GremlinFSUtils.conf('template_property', 'template'),
++            # "mapping_property": GremlinFSUtils.conf('mapping_property', 'mapping'),
++            "query_property": GremlinFSUtils.conf('query_property', 'query'),
++            "log_property": GremlinFSUtils.conf('log_property', 'log'),
++            "err_property": GremlinFSUtils.conf('err_property', 'err'),
+ 
+             "default_uid": GremlinFSUtils.conf('default_uid', 1001),
+             "default_gid": GremlinFSUtils.conf('default_gid', 1001),
+@@ -4433,6 +4934,206 @@ class GremlinFS(object):
+ 
+         return GremlinFS.__operations 
+ 
++# 
++# https://softwareengineering.stackexchange.com/questions/191623/best-practices-for-execution-of-untrusted-code
++# https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
++# http://lucumr.pocoo.org/2011/2/1/exec-in-python/
++# 
++
++
++class PyExec(object):
++
++    @classmethod
++    def instance(clazz, environment={}, whitelist={}, blacklist=[], allowed=[], notallowed=[], defaults=None):
++        instance = clazz(environment=environment, whitelist=whitelist, blacklist=blacklist, allowed=allowed, notallowed=notallowed, defaults=defaults)
++        return instance
++
++    def __init__(self, environment={}, whitelist={}, blacklist=[], allowed=[], notallowed=[], defaults=None):
++        self.logger = logging.getLogger("PyExec")
++        if not defaults:
++            defaults = self.defaults()
++        allalloweds = self.allowed()
++        if allowed:
++            allalloweds.extend(allowed)
++        self.alloweds = []
++        for allowed in allalloweds:
++            self.alloweds.append(re.compile(allowed))
++        allnotalloweds = self.notallowed()
++        if notallowed:
++            allnotalloweds.extend(notallowed)
++        self.notalloweds = []
++        for notallowed in allnotalloweds:
++            self.notalloweds.append(re.compile(notallowed))
++        definitions = self.definitions(whitelist, blacklist, defaults)
++        self.globalenv = self.globals(environment, definitions)
++        self.localenv = self.locals(environment, definitions)
++
++    def defaults(self):
++        return {
++            "True": True,
++            "False": False,
++            "eval": eval,
++            "len": len
++        }
++
++    def allowed(self):
++        return []
++
++    def notallowed(self):
++        # Prevent using os, system and introspective __ objects
++        return [
++            '[\"\']+os[\"\']+',
++            '(os)?\.system',
++            '__[a-zA-Z]+__'
++        ]
++
++    def environment(self):
++        return self.localenv
++
++    def definitions(self, whitelist={}, blacklist=[], defaults=None):
++        definitions = {}
++        if defaults:
++            definitions = dict(definitions, **defaults)
++        if whitelist:
++            definitions = dict(definitions, **whitelist)
++        if blacklist:
++            for key in blacklist:
++                if key in definitions:
++                    del definitions[key]
++        return definitions
++
++    def globals(self, environment={}, definitions={}):
++        # Disable builtin functions, 
++        # place needed and safe builtins into defaults or whitelist
++        return {
++            "__builtins__": {}
++        }
++
++    def locals(self, environment={}, definitions={}):
++        locals = {}
++        if environment:
++            locals = dict(locals, **environment)
++        if definitions:
++            locals = dict(locals, **definitions)
++        return locals
++
++    # # https://stackoverflow.com/questions/3906232/python-get-the-print-output-in-an-exec-statement
++    # @contextlib.contextmanager
++    # def stdoutIO(stdout=None):
++    #     old = sys.stdout
++    #     if stdout is None:
++    #         stdout = StringIO.StringIO()
++    #     sys.stdout = stdout
++    #     yield stdout
++    #     sys.stdout = old
++
++    def pyeval(self, command):
++        ret = None
++        # with stdoutIO() as s:
++        # from cStringIO import StringIO
++        try:
++            # from StringIO import StringIO ## for Python 2
++            from cStringIO import StringIO
++        except ImportError:
++            from io import StringIO ## for Python 3
++        old_stdout = sys.stdout
++        old_stderr = sys.stderr
++        redirected_output = sys.stdout = StringIO()
++        redirected_error = sys.stderr = StringIO()
++        if not command:
++            # print "Empty line"
++            sys.stdout = old_stdout
++            sys.stderr = old_stderr
++            return ret, redirected_output.getvalue(), redirected_error.getvalue()
++        if self.notalloweds:
++            for notallowed in self.notalloweds:
++                if notallowed.search(command):
++                    # print "Illegal line"
++                    sys.stdout = old_stdout
++                    sys.stderr = old_stderr
++                    return ret, redirected_output.getvalue(), redirected_error.getvalue()
++        if self.alloweds:
++            ok = False
++            for allowed in self.alloweds:
++                if allowed.search(command):
++                    ok = True
++            if not ok:
++                # print "Illegal line"
++                sys.stdout = old_stdout
++                sys.stderr = old_stderr
++                return ret, redirected_output.getvalue(), redirected_error.getvalue()
++        try:
++            ret = eval(
++                command,
++                self.globalenv,
++                self.localenv
++            )
++        except:
++            # print "Exception"
++            traceback.print_exc()
++            sys.stdout = old_stdout
++            sys.stderr = old_stderr
++            return ret, redirected_output.getvalue(), redirected_error.getvalue()
++        sys.stdout = old_stdout
++        sys.stderr = old_stderr
++        return ret, redirected_output.getvalue(), redirected_error.getvalue()
++
++    def pyexec(self, command):
++        # with stdoutIO() as s:
++        # from cStringIO import StringIO
++        try:
++            # from StringIO import StringIO ## for Python 2
++            from cStringIO import StringIO
++        except ImportError:
++            from io import StringIO ## for Python 3
++        old_stdout = sys.stdout
++        old_stderr = sys.stderr
++        redirected_output = sys.stdout = StringIO()
++        redirected_error = sys.stderr = StringIO()
++        if not command:
++            # print "Empty line"
++            sys.stdout = old_stdout
++            sys.stderr = old_stderr
++            return None, redirected_output.getvalue(), redirected_error.getvalue()
++        if self.notalloweds:
++            for notallowed in self.notalloweds:
++                if notallowed.search(command):
++                    # print "Illegal line"
++                    sys.stdout = old_stdout
++                    sys.stderr = old_stderr
++                    return None, redirected_output.getvalue(), redirected_error.getvalue()
++        if self.alloweds:
++            ok = False
++            for allowed in self.alloweds:
++                if allowed.search(command):
++                    ok = True
++            if not ok:
++                # print "Illegal line"
++                sys.stdout = old_stdout
++                sys.stderr = old_stderr
++                return None, redirected_output.getvalue(), redirected_error.getvalue()
++        try:
++            exec(
++                command,
++                self.globalenv,
++                self.localenv
++            )
++        except:
++            # print "Exception"
++            traceback.print_exc()
++            sys.stdout = old_stdout
++            sys.stderr = old_stderr
++            return None, redirected_output.getvalue(), redirected_error.getvalue()
++        sys.stdout = old_stdout
++        sys.stderr = old_stderr
++        return None, redirected_output.getvalue(), redirected_error.getvalue()
++
++    def pyrun(self, command, execfn="eval"):
++        if execfn == "eval":
++            return self.pyeval(command)
++        elif execfn == "exec":
++            self.pyexec(command)
++
+ 
+ 
+ def main(
+diff --git a/requirements.txt b/requirements.txt
+index 24a1476..8305494 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -6,3 +6,8 @@ fusepy==3.0.1
+ gremlinpython==3.3.7
+ pika==1.1.0
+ simplejson
++
++# 
++PyYAML
++flatten_json
++jproperties

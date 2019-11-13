@@ -1,0 +1,638 @@
+diff --git a/config.py b/config.py
+index e6c1820..8bebf38 100644
+--- a/config.py
++++ b/config.py
+@@ -99,25 +99,6 @@ gremlinfs = dict(
+         "template": {
+         },
+         "properties": []
+-    }, {
+-        "name": "properties",
+-        "label": "properties",
+-        "type": "file",
+-        "pattern": "^.*\.properties$",
+-        "target": {
+-            "type": "file"
+-        },
+-        "match": {
+-            "type": "property",
+-            "property": "name",
+-            "pattern": {
+-                "type": "regex",
+-                "pattern": "^.*\.properties$",
+-            }
+-        },
+-        "template": {
+-        },
+-        "properties": []
+     }, {
+         "name": "group",
+         "label": "group",
+diff --git a/gremlinfs.py b/gremlinfs.py
+index 8adba1f..2769ae5 100644
+--- a/gremlinfs.py
++++ b/gremlinfs.py
+@@ -60,37 +60,43 @@ logging.basicConfig(level=config.gremlinfs['log_level'])
+ 
+ class GremlinFSBase(object):
+ 
+-    def all(self):
++    def all(self, prefix = None):
+         props = {}
+         for prop, value in vars(self).iteritems():
+-            if prop and len(prop) > 1 and prop[0] == "_":
+-                props[prop[1:]] = value
++            if prefix:
++                if prop and len(prop) > 0 and prop.startswith("_%s." % (prefix)):
++                    props[prop.replace("_%s." % (prefix), "", 1)] = value
++            else:
++                if prop and len(prop) > 1 and prop[0] == "_":
++                    props[prop[1:]] = value
+         return props
+ 
+-    def keys(self):
+-        keys = []
+-        for prop, value in vars(self).iteritems():
+-            if prop and len(prop) > 1 and prop[0] == "_":
+-                keys.append(prop[1:])
+-        return keys
++    def keys(self, prefix = None):
++        return self.all(prefix).keys()
+ 
+-    def has(self, key):
+-        if not hasattr(self, "_%s" % (key)):
+-            return False
+-        return True
++    def has(self, key, prefix = None):
++        if prefix:
++            key = "%s.%s" % (prefix, key)
++        if hasattr(self, "_%s" % (key)):
++            return True
++        return False
+ 
+-    def set(self, key, value):
++    def set(self, key, value, prefix = None):
+         if key != "__class__":
++            if prefix:
++                key = "%s.%s" % (prefix, key)
+             setattr(self, "_%s" % (key), value)
+ 
+-    def get(self, key, default = None):
+-        if not self.has(key):
++    def get(self, key, default = None, prefix = None):
++        if not self.has(key, prefix = prefix):
+             return default
++        if prefix:
++            key = "%s.%s" % (prefix, key)
+         value = getattr(self, "_%s" % (key), default)
+         return value
+ 
+-    def property(self, name, default = None):
+-        return self.get(name, default)
++    def property(self, name, default = None, prefix = None):
++        return self.get(name, default, prefix = prefix)
+ 
+ 
+ 
+@@ -1489,7 +1495,10 @@ class GremlinFSPath(GremlinFSBase):
+                         import json
+                         from flatten_json import unflatten
+ 
+-                        jsondata = node.templateProperties('data')
++                        jsondata = node.templateProperties(
++                            None, 
++                            'data'
++                        )
+                         jsondata = unflatten(jsondata, '.')
+                         data = json.dumps(jsondata, indent=4, sort_keys=True)
+ 
+@@ -1505,10 +1514,15 @@ class GremlinFSPath(GremlinFSBase):
+                 result = re.findall(template.pattern, template.template)
+                 tokens = [r[1] for r in result]
+                 subs = {}
++
++                properties = node.templateProperties(
++                    tokens
++                )
++
+                 for token in tokens:
+                     if token and len(token) > 0:
+                         try:
+-                            subs[token] = node.templateProperty(
++                            subs[token] = properties.get(
+                                 token,
+                                 None
+                             )
+@@ -1517,15 +1531,16 @@ class GremlinFSPath(GremlinFSBase):
+ 
+                 if subs:
+                     data = template.substitute(**subs)
++
+                 else:
+-                    data = template
++                    data = template.substitute()
+ 
+             else:
+ 
+                 data = node.readProperty(
+                     self.config("data_property"),
+-                    "base64",
+-                    ""
++                    "",
++                    encoding = "base64"
+                 )
+ 
+             if data and size > 0 and offset > 0:
+@@ -1622,8 +1637,8 @@ class GremlinFSPath(GremlinFSBase):
+             node.writeProperty(
+                 self.config("data_property"),
+                 data,
+-                offset,
+-                "base64"
++                offset = offset,
++                encoding = "base64"
+             )
+ 
+             # TODO: Total hack
+@@ -1639,7 +1654,6 @@ class GremlinFSPath(GremlinFSBase):
+                     jsondata = flatten(jsondata, '.')
+ 
+                     node.setProperties(jsondata, 'data')
+-                    # logging.error( node.getProperties('data') )
+ 
+                 except:
+                     logging.error(' GremlinFS: writeNode JSON exception ')
+@@ -1658,7 +1672,6 @@ class GremlinFSPath(GremlinFSBase):
+                     yamldata = flatten(yamldata, '.')
+ 
+                     node.setProperties(yamldata, 'data')
+-                    # logging.error( node.getProperties('data') )
+ 
+                 except:
+                     logging.error(' GremlinFS: writeNode YAML exception ')
+@@ -1680,26 +1693,12 @@ class GremlinFSPath(GremlinFSBase):
+                     propdata = flatten(propdata, '.')
+ 
+                     node.setProperties(propdata, 'data')
+-                    # logging.error( node.getProperties('data') )
+ 
+                 except:
+                     logging.error(' GremlinFS: writeNode properties exception ')
+                     traceback.print_exc()
+ 
+-            # # newdata = 
+-            # node.readProperty(
+-            #     self.config("data_property"),
+-            #     "base64",
+-            #     ""
+-            # )
+-
+-            # if data != newdata:
+-            #     logging.error(' GremlinFS: written file data differs: input: "%s", output: "%s" ' % (data, newdata))
+-            #     raise ValueError(' GremlinFS: written file data differs: input: "%s", output: "%s" ' % (data, newdata))
+-            # # elif len(data) != len(newdata):
+-            # #     ...
+-
+-            return data # newdata
++            return data
+ 
+         # elif self._path == "vertex_labels":
+         #     return default
+@@ -1722,36 +1721,13 @@ class GremlinFSPath(GremlinFSBase):
+         elif self._path == "vertex_property":
+             node = GremlinFSUtils.found( self.node() )
+ 
+-            # # node.setProperty(
+-            # #     self._vertexproperty,
+-            # #     data
+-            # # )
+-
+-            # node.setProperty(
+-            #     self._vertexproperty,
+-            #     data
+-            # )
+-
+             node.writeProperty(
+                 self._vertexproperty,
+                 data,
+-                offset
++                offset = offset
+             )
+ 
+-            # newnode = GremlinFSUtils.found( self.node() )
+-            # # newdata = 
+-            # newnode.getProperty(
+-            #     self._vertexproperty,
+-            #     ""
+-            # )
+-
+-            # if data != newdata:
+-            #     logging.error(' GremlinFS: written file data differs: input: "%s", output: "%s" ' % (data, newdata))
+-            #     raise ValueError(' GremlinFS: written file data differs: input: "%s", output: "%s" ' % (data, newdata))
+-            # # elif len(data) != len(newdata):
+-            # #     ...
+-
+-            return data # newdata
++            return data
+ 
+         # elif self._path == "vertex_edges":
+         #     return default
+@@ -2139,6 +2115,9 @@ class GremlinFSNode(GremlinFSBase):
+     def utils(self):
+         return GremlinFSUtils.utils()
+ 
++    # def type(self):
++    #     return GremlinFSNode()
++
+     # 
+ 
+     def toid(self, short = False):
+@@ -2179,27 +2158,27 @@ class GremlinFSNode(GremlinFSBase):
+ 
+         return False
+ 
+-    def hasProperty(self, name):
++    def hasProperty(self, name, prefix = None):
+ 
+         node = self
+ 
+         if not node:
+             return False
+ 
+-        data = node.get(name, None)
++        data = node.has(name, prefix = prefix)
+         if not data:
+             return False
+ 
+         return True
+ 
+-    def getProperty(self, name, default = None, encoding = None):
++    def getProperty(self, name, default = None, encoding = None, prefix = None):
+ 
+         node = self
+ 
+         if not node:
+             return default
+ 
+-        data = node.get(name, None)
++        data = node.get(name, None, prefix = prefix)
+         if not data:
+             return default
+ 
+@@ -2210,7 +2189,7 @@ class GremlinFSNode(GremlinFSBase):
+ 
+         return data
+ 
+-    def setProperty(self, name = None, data = None, encoding = None):
++    def setProperty(self, name, data = None, encoding = None, prefix = None):
+ 
+         node = self
+ 
+@@ -2222,11 +2201,16 @@ class GremlinFSNode(GremlinFSBase):
+ 
+         nodeid = node.get("id")
+ 
++        node.set(name, data, prefix = prefix)
++
+         if encoding:
+             import base64
+             # data = base64.b64encode(data.encode('utf-8'))
+             data = base64.b64encode(data) # .encode('utf-8'))
+ 
++        if prefix:
++            name = "%s.%s" % (prefix, name)
++
+         GremlinFSVertex.fromV(
+             self.g().V(
+                 nodeid
+@@ -2237,7 +2221,7 @@ class GremlinFSNode(GremlinFSBase):
+ 
+         return data
+ 
+-    def unsetProperty(self, name = None):
++    def unsetProperty(self, name, prefix = None):
+ 
+         node = self
+ 
+@@ -2246,6 +2230,11 @@ class GremlinFSNode(GremlinFSBase):
+ 
+         nodeid = node.get("id")
+ 
++        node.set(name, None, prefix = prefix)
++
++        if prefix:
++            name = "%s.%s" % (prefix, name)
++
+         # Having issues with exception throwing, even though deletion works
+         try:
+             GremlinFSVertex.fromV(
+@@ -2258,102 +2247,110 @@ class GremlinFSNode(GremlinFSBase):
+         except:
+             pass
+ 
+-    def setProperties(self, properties, prefix = "data"):
++    def setProperties(self, properties, prefix = None):
+ 
+         node = self
+ 
+-        if not prefix:
+-            prefix = "data"
++        existing = {}
+ 
+-        existing = node.getProperties(prefix)
++        existing.update(node.all(prefix))
+ 
+         if existing:
+             for key, value in existing.items():
+                 if not key in properties:
+                     node.unsetProperty(
+-                        "%s.%s" % (prefix, key),
+-                    )                    
++                        key,
++                        prefix = prefix
++                    )
+ 
+         if properties:
+             for key, value in properties.items():
+-                # if value:
+                 try:
+                     node.setProperty(
+-                        "%s.%s" % (prefix, key),
+-                        value
++                        key,
++                        value,
++                        prefix = prefix
+                     )
+                 except:
+                     logging.error(' GremlinFS: setProperties exception ')
+                     traceback.print_exc()
+ 
+-                # else:
+-                #     try:
+-                #         node.unsetProperty(
+-                #             "%s.%s" % (prefix, key),
+-                #         )
+-                #     except:
+-                #         logging.error(' GremlinFS: setProperties exception ')
+-                #         traceback.print_exc()
+-
+-    def getProperties(self, prefix = "data"):
++    def getProperties(self, prefix = None):
+ 
+         node = self
+ 
+         properties = {}
++        properties.update(node.all(prefix))
+ 
+-        existing = node.all()
+-        if existing:
+-            for key, value in existing.items():
+-                if key and key.startswith("%s." % (prefix)):
+-                    properties[key.replace("%s." % (prefix), "", 1)] = value
++        try:
++            pnode = self.follow("properties")
++            if pnode:
++                properties.update(pnode.all(prefix))
++        except:
++            pass
+ 
+         return properties    
+ 
+-    def readProperty(self, name, encoding = None, default=None):
+-        return self.getProperty(name, default, encoding) # "base64")
++    def readProperty(self, name, default = None, encoding = None, prefix = None):
++        return self.getProperty(name, default, encoding = encoding, prefix = prefix)
+ 
+-    def writeProperty(self, name, data, offset = 0, encoding = None):
++    def writeProperty(self, name, data, offset = 0, encoding = None, prefix = None):
+ 
+         # def irepl(clazz, old, data, index = 0):
+-        old = self.getProperty(name, None, encoding) # "base64")
++        old = self.getProperty(name, None, encoding = encoding, prefix = prefix)
+         new = GremlinFSUtils.irepl(old, data, offset)
+ 
+-        self.setProperty(name, new, encoding) # "base64")
++        self.setProperty(name, new, encoding = encoding, prefix = prefix)
+ 
+         return new
+ 
++    def templateProperties(self, properties, prefix = None):
+ 
+-    def templateProperty(self, name, default = None, encoding = None):
+-        if self.hasProperty( "%s.%s" % ("ds", name) ):
+-            ret, log, err = GremlinFS.operations().eval(
+-                self.getProperty(
+-                    "%s.%s" % ("ds", name),
+-                    None
+-                ), 
+-                self
+-            )
+-            if not ret:
+-                return default
+-            return str(ret).strip()
+-        else:
+-            ret = self.getProperty( name, default, encoding )
+-            if not ret:
+-                return default
+-            return str(ret).strip()
++        node = self
+ 
+-    def templateProperties(self, prefix = "data"):
++        dsprefix = "ds"
++        if prefix:
++            dsprefix = "ds.%s" % (prefix)
+ 
+-        node = self
++        existing = {}
++        existing.update(node.all(prefix))
+ 
+-        properties = {}
++        datasources = {}
++        datasources.update(node.all(dsprefix))
+ 
+-        existing = node.all()
+-        if existing:
+-            for key, value in existing.items():
+-                if key and key.startswith("%s." % (prefix)):
+-                    properties[key.replace("%s." % (prefix), "", 1)] = self.templateProperty(key)
++        try:
++            pnode = self.follow("properties")
++            if pnode:
++                existing.update(pnode.all(prefix))
++                datasources.update(pnode.all(dsprefix))
++        except:
++            pass
++
++        if not properties:
++            properties = existing
++
++        tproperties = {}
++        # for key, value in properties.items():
++        for key in properties:
++            if key and not key.startswith("ds."):
++                try:
++                    if key in datasources:
++                        ret, log, err = GremlinFS.operations().eval(
++                            datasources.get(key),
++                            self
++                        )
++                        if ret:
++                            tproperties[key] = str(ret).strip()
++                    # else:
++                    elif key in existing:
++                        value = existing.get(key)
++                        if value:
++                            tproperties[key] = str(value).strip()
++                except:
++                    logging.error(' GremlinFS: templateProperties exception ')
++                    traceback.print_exc()
+ 
+-        return properties
++        return tproperties
+ 
+ 
+ 
+@@ -2542,9 +2539,10 @@ class GremlinFSVertex(GremlinFSNode):
+ 
+     @classmethod
+     def fromV(clazz, v):
+-        return GremlinFSVertex.fromMap(
++        node = GremlinFSVertex.fromMap(
+             v.valueMap(True).next()
+         )
++        return node
+ 
+     @classmethod
+     def fromVs(clazz, vs):
+@@ -2552,6 +2550,19 @@ class GremlinFSVertex(GremlinFSNode):
+             vs.valueMap(True).toList()
+         )
+ 
++    # def type(self):
++    #     if not hasattr(self, "_%s" % ("nodetype")):
++    #         try:
++    #             nodetype = self.follow("type")
++    #             if nodetype:
++    #                 setattr(self, "__%s" % ("nodetype"), nodetype)
++    #             else:
++    #                 setattr(self, "__%s" % ("nodetype"), GremlinFSVertex())
++    #         except:
++    #             setattr(self, "__%s" % ("nodetype"), GremlinFSVertex())
++    # 
++    #     return getattr(self, "__%s" % ("nodetype"), GremlinFSVertex())
++
+     def follow(self, edgeid ):
+         node = self.edgenode( edgeid, False )
+         if not node:
+@@ -3066,31 +3077,6 @@ class GremlinFSVertex(GremlinFSNode):
+ 
+         return True
+ 
+-    # def readFolderEntries(self):
+-
+-    #     node = self
+-
+-    #     entries = GremlinFSVertex.fromV(
+-    #         self.query(
+-    #             "%s.%s" % (node.getProperty(
+-    #                 self.config("query_property"),
+-    #                 ""
+-    #             ), "valueMap(True).toList()"), 
+-    #             node, 
+-    #             []
+-    #         )
+-    #     )
+-
+-    #     if entries:
+-    #         for entry in entries:
+-    #             if entry and entry.get('id', None) == node.get('id', None):
+-    #                 logging.error(' GremlinFS: readFolder loop detected, node: %s ' % (
+-    #                     str(entry.get('id', None))
+-    #                 ))
+-    #                 return []
+-
+-    #     return entries
+-
+     def readFolderEntries(self):
+ 
+         node = self
+@@ -3178,8 +3164,8 @@ class GremlinFSVertex(GremlinFSNode):
+                     )
+ 
+             except:
+-                logging.error(' GremlinFS: edge from path ID exception ')
+-                traceback.print_exc()
++                # logging.error(' GremlinFS: edge from path ID exception ')
++                # traceback.print_exc()
+                 return None
+ 
+         return None
+@@ -3246,8 +3232,8 @@ class GremlinFSVertex(GremlinFSNode):
+                         )
+ 
+             except:
+-                logging.error(' GremlinFS: edge from path ID exception ')
+-                traceback.print_exc()
++                # logging.error(' GremlinFS: edge from path ID exception ')
++                # traceback.print_exc()
+                 return None
+ 
+         elif node and label:
+@@ -3293,8 +3279,8 @@ class GremlinFSVertex(GremlinFSNode):
+                         )
+ 
+             except:
+-                logging.error(' GremlinFS: edge from path ID exception ')
+-                traceback.print_exc()
++                # logging.error(' GremlinFS: edge from path ID exception ')
++                # traceback.print_exc()
+                 return None
+ 
+ 
+@@ -3881,7 +3867,10 @@ class GremlinFSOperations(Operations):
+             match.enter("chmod", path, mode)
+             if match:
+                 if match.isFound():
+-                    match.setProperty("mode", mode)
++                    match.setProperty(
++                        "mode", 
++                        mode
++                    )
+ 
+                 else:
+                     raise FuseOSError(errno.ENOENT)
+@@ -3907,8 +3896,14 @@ class GremlinFSOperations(Operations):
+             match.enter("chown", path, uid, gid)
+             if match:
+                 if match.isFound():
+-                    match.setProperty("owner", uid)
+-                    match.setProperty("group", gid)
++                    match.setProperty(
++                        "owner", 
++                        uid
++                    )
++                    match.setProperty(
++                        "group", 
++                        gid
++                    )
+ 
+                 else:
+                     raise FuseOSError(errno.ENOENT)
+@@ -3937,8 +3932,6 @@ class GremlinFSOperations(Operations):
+             if match:
+                 if not match.isFound():
+                     created = match.createFile(mode)
+-                    # if created:
+-                    #     match.setProperty("mode", mode)
+ 
+                 else:
+                     # TODO: Wrong exception
+@@ -4082,8 +4075,6 @@ class GremlinFSOperations(Operations):
+             if match:
+                 if not match.isFound():
+                     created = match.createFolder(mode)
+-                    # if created:
+-                    #     match.setProperty("mode", mode)
+ 
+                 else:
+                     raise FuseOSError(errno.ENOENT)
