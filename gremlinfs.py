@@ -307,12 +307,102 @@ class GremlinFSPath(GremlinFSBase):
                     raise ValueError(' GremlinFS: Error parsing path [{}] '.format(path))
 
     @classmethod
+    def path(clazz, path, node = None):
+
+        if not node:
+            root = None
+            if GremlinFSUtils.conf("fs_root", None):
+                root = GremlinFSVertex.load(
+                    GremlinFSUtils.conf("fs_root", None)
+                )
+            node = root
+
+        if not path:
+            return node
+
+        elif path and len(path) == 1 and path[0] == "":
+            return node
+
+        elem = path[0]
+
+        nodes = None
+        if node:
+            nodes = node.readFolderEntries()
+
+        else:
+            nodes = GremlinFSVertex.fromVs(
+                GremlinFS.operations().g().V().where(
+                    __.out(
+                        GremlinFSUtils.conf("in_label", "in")
+                    ).count().is_(0)
+                )
+            )
+
+        if nodes:
+            for cnode in nodes:
+                if cnode.toid(True) == elem:
+                    return GremlinFSPath.path(path[1:], cnode)
+
+        return None
+
+    @classmethod
+    def pathnode(clazz, nodeid, parent, path):
+
+        node = None
+
+        if parent and nodeid:
+            nodes = parent.readFolderEntries()
+            if nodes:
+                for cnode in nodes:
+                    if cnode and cnode.get("name") == nodeid:
+                        node = cnode
+                        break
+
+        elif nodeid:
+            node = GremlinFSVertex.load( nodeid )
+
+        elif path:
+            node = GremlinFSPath.path( path )
+
+        return node
+
+    @classmethod
+    def pathparent(clazz, path = []):
+
+        root = None
+        if GremlinFSUtils.conf("fs_root", None):
+            root = GremlinFSVertex.load(
+                GremlinFSUtils.conf("fs_root", None)
+            )
+
+        parent = root
+
+        if not path:
+            return parent
+
+        vindex = 0
+        for i, item in enumerate(path):
+            if item == GremlinFSUtils.conf("vertex_folder", ".V"):
+                vindex = i
+
+        if vindex:
+            if vindex > 0:
+                parent = GremlinFSPath.path( path[0:vindex] )
+
+        else:
+            parent = GremlinFSPath.path( path )
+
+        return parent
+
+    @classmethod
     def match(clazz, path):
 
         match = {
 
             "path": None,
             "full": None,
+            "parent": None,
+            "node": None,
 
             "vertexlabel": "vertex",
             "vertexid": None,
@@ -324,7 +414,7 @@ class GremlinFSPath(GremlinFSBase):
         }
 
         match["full"] = clazz.expand(path)
-        expanded = match["full"]
+        expanded = match.get("full", [])
 
         if not expanded:
             match.update({
@@ -344,17 +434,69 @@ class GremlinFSPath(GremlinFSBase):
                     vindex = i
 
             if len(expanded) == vindex + 1:
+
+                parent = GremlinFSPath.pathparent(
+                     expanded
+                )
+
+                if parent:
+                    match.update({
+                        "parent": parent
+                    })
+
                 match.update({
                     "path": "vertexes",
                 })
 
             elif len(expanded) == vindex + 2:
+
+                parent = GremlinFSPath.pathparent(
+                     expanded
+                )
+
+                if parent:
+                    match.update({
+                        "parent": parent
+                    })
+
+                node = GremlinFSPath.pathnode(
+                    expanded[vindex + 1],
+                    match.get("parent", None),
+                    match.get("full", None),
+                )
+
+                if node:
+                    match.update({
+                        "node": node
+                    })
+
                 match.update({
                     "path": "vertex",
                     "vertexid": GremlinFSUtils.found( expanded[vindex + 1] ),
                 })
 
             elif len(expanded) == vindex + 3:
+
+                parent = GremlinFSPath.pathparent(
+                     expanded
+                )
+
+                if parent:
+                    match.update({
+                        "parent": parent
+                    })
+
+                node = GremlinFSPath.pathnode(
+                    expanded[vindex + 1],
+                    match.get("parent", None),
+                    match.get("full", None),
+                )
+
+                if node:
+                    match.update({
+                        "node": node
+                    })
+
                 if expanded[vindex + 2] == GremlinFSUtils.conf("in_edge_folder", "EI"):
                     match.update({
                         "path": "vertex_in_edges",
@@ -381,6 +523,27 @@ class GremlinFSPath(GremlinFSBase):
                     })
 
             elif len(expanded) == vindex + 4:
+
+                parent = GremlinFSPath.pathparent(
+                     expanded
+                )
+
+                if parent:
+                    match.update({
+                        "parent": parent
+                    })
+
+                node = GremlinFSPath.pathnode(
+                    expanded[vindex + 1],
+                    match.get("parent", None),
+                    match.get("full", None),
+                )
+
+                if node:
+                    match.update({
+                        "node": node
+                    })
+
                 if expanded[vindex + 2] == GremlinFSUtils.conf("in_edge_folder", "EI"):
                     match.update({
                         "path": "vertex_in_edge",
@@ -399,21 +562,40 @@ class GremlinFSPath(GremlinFSBase):
             match.update({
                 "path": "atpath",
                 "name": expanded[0],
-                "parent": None
+                "parent": None,
+                "node": GremlinFSPath.pathnode(
+                    match.get("vertexid", None),
+                    None,
+                    match.get("full", None),
+                )
             })
 
         elif expanded and len(expanded) == 2:
             match.update({
                 "path": "atpath",
                 "name": expanded[1],
-                "parent": [expanded[0]] # Should be a list
+                "parent": GremlinFSPath.pathparent([expanded[0]])
+            })
+            match.update({
+                "node": GremlinFSPath.pathnode(
+                    match.get("vertexid", None),
+                    match.get("parent", None),
+                    match.get("full", None),
+                )
             })
 
         elif expanded and len(expanded) > 2:
             match.update({
                 "path": "atpath",
                 "name": expanded[-1],
-                "parent": expanded[0:-1]
+                "parent": GremlinFSPath.pathparent(expanded[0:-1])
+            })
+            match.update({
+                "node": GremlinFSPath.pathnode(
+                    match.get("vertexid", None),
+                    match.get("parent", None),
+                    match.get("full", None),
+                )
             })
 
         if match and match["path"] in clazz.paths():
@@ -477,90 +659,11 @@ class GremlinFSPath(GremlinFSBase):
 
         return root
 
-    def path(self, path, node = None):
-
-        if not node:
-            node = self.root()
-
-        if not path:
-            return node
-
-        elif path and len(path) == 1 and path[0] == "":
-            return node
-
-        elem = path[0]
-
-        nodes = None
-        if node:
-            nodes = node.readFolderEntries()
-
-        else:
-            nodes = GremlinFSVertex.fromVs(
-                self.g().V().where(
-                    __.out(
-                        self.config("in_label")
-                    ).count().is_(0)
-                )
-            )
-
-        if nodes:
-            for cnode in nodes:
-                if cnode.toid(True) == elem:
-                    return self.path(path[1:], cnode)
-
-        return None
-
     def node(self):
+        return self._node
 
-        # if not self._vertexid:
-        #     return None
-
-        if self._vertexid:
-
-            node = GremlinFSVertex.load( self._vertexid )
-            if node:
-                return node
-
-            parent = self.parent(self.get("full", []))
-            if parent:
-                nodes = parent.readFolderEntries()
-                if nodes:
-                    for node in nodes:
-                        if node and node.get("name") == self._vertexid:
-                            return node
-
-
-        if self._full:        
-            node = self.path( self._full )
-            if node:
-                return node
-
-        return None
-
-    def parent(self, path = []):
-
-        parent = self.root()
-
-        if not path:
-            return parent
-
-        vindex = 0
-        for i, item in enumerate(path):
-            if item == self.config("vertex_folder"):
-                vindex = i
-
-        if vindex:
-            if vindex > 0:
-                parent = self.path( path[0:vindex] )
-                if parent:
-                    return parent
-
-        else:
-            parent = self.path( path )
-            if parent:
-                return parent
-
-        return parent
+    def parent(self):
+        return self._parent
 
     # 
 
@@ -771,9 +874,9 @@ class GremlinFSPath(GremlinFSBase):
 
         elif self._path == "vertex":
             node = self.node()
-            if not node:
-                return False
-            return True
+            if node:
+                return True
+            return False
 
         # elif self._path == "vertex_properties":
         #     return default
@@ -782,13 +885,12 @@ class GremlinFSPath(GremlinFSBase):
         #     return default
 
         elif self._path == "vertex_property":
-            node = self.node()
-            if not node:
-                return False
-            if not node.has(self._vertexproperty):
-                return False
-            else:
+            node = GremlinFSUtils.found( self.node() )
+            if node.has( self._vertexproperty ):
                 return True
+            elif node.edge( self._vertexproperty, False ):
+                return True
+            return False
 
         # elif self._path == "vertex_edges":
         #     return default
@@ -803,24 +905,16 @@ class GremlinFSPath(GremlinFSBase):
         #     return default
 
         elif self._path == "vertex_in_edge":
-
             node = GremlinFSUtils.found( self.node() )
-            edge = node.edge( self._vertexedge, True )
-
-            if not edge:
-                return False
-            else:
+            if node.edge( self._vertexedge, True ):
                 return True
+            return False
 
         elif self._path == "vertex_out_edge":
-
             node = GremlinFSUtils.found( self.node() )
-            edge = node.edge( self._vertexedge, False )
-
-            if not edge:
-                return False
-            else:
+            if node.edge( self._vertexedge, False ):
                 return True
+            return False
 
         # elif self._path == "create_vertex":
         #     return default
@@ -854,12 +948,12 @@ class GremlinFSPath(GremlinFSBase):
             newlabel = GremlinFSVertex.infer("label", self._name, GremlinFS.operations().defaultFolderLabel())
             newlabel = GremlinFSVertex.label(newname, newlabel, "folder", GremlinFS.operations().defaultFolderLabel())
             newuuid = GremlinFSVertex.infer("uuid", self._name)
-            parent = self.parent(self.get("parent", []))
+            parent = self.parent()
 
             if not newname:
                 raise FuseOSError(errno.ENOENT)
 
-            parent = self.parent(self.get("parent", []))
+            parent = self.parent()
             newfolder = GremlinFSVertex.make(
                 name = newname,
                 label = newlabel,
@@ -894,7 +988,7 @@ class GremlinFSPath(GremlinFSBase):
             newlabel = GremlinFSVertex.infer("label", self._name, "vertex")
             newlabel = GremlinFSVertex.label(newname, newlabel, "file", "vertex")
             newuuid = GremlinFSVertex.infer("uuid", self._name)
-            parent = self.parent(self.get("parent", []))
+            parent = self.parent()
 
             # Do not create an A vertex in /V/B, unless A is vertex
             if label != "vertex":
@@ -1010,7 +1104,7 @@ class GremlinFSPath(GremlinFSBase):
             entries.extend([
                 self.config("vertex_folder")
             ])
-            parent = self.parent(self.get("full", []))
+            parent = self.node()
             nodes = parent.readFolderEntries()
             if nodes:
                 for node in nodes:
@@ -1039,7 +1133,7 @@ class GremlinFSPath(GremlinFSBase):
 
             short = False
 
-            parent = self.parent(self.get("full", []))
+            parent = self.parent()
             nodes = None
 
             if parent:
@@ -1204,7 +1298,7 @@ class GremlinFSPath(GremlinFSBase):
             newlabel = GremlinFSVertex.infer("label", self._name, "vertex")
             newlabel = GremlinFSVertex.label(newname, newlabel, "file", "vertex")
             newuuid = GremlinFSVertex.infer("uuid", self._name)
-            parent = self.parent(self.get("parent", []))
+            parent = self.parent()
 
             if not newname:
                 raise FuseOSError(errno.ENOENT)
@@ -1988,7 +2082,7 @@ class GremlinFSPath(GremlinFSBase):
         if self._path == "atpath":
 
             node = GremlinFSUtils.found(self.node())
-            parent = newmatch.parent(newmatch.get("parent", []))
+            parent = newmatch.parent()
 
             node.rename(newmatch._name)
             node.move(parent)
@@ -2356,9 +2450,6 @@ class GremlinFSNode(GremlinFSBase):
             return True
 
         return False
-
-    def path(self):
-        return None
 
     def hasProperty(self, name, prefix = None):
 
@@ -3933,7 +4024,43 @@ class GremlinFSVertex(GremlinFSNode):
 
         return True
 
-    def readFolderEntries(self):
+    def parent(self):
+
+        node = self
+
+        try:
+
+            return GremlinFSVertex.fromMap(
+                self.g().V(
+                    node.get("id")
+                ).outE(
+                    self.config("in_label")
+                ).inV().valueMap(True).next()
+            )
+
+        except:
+            # logging.error(' GremlinFS: parent exception ')
+            # traceback.print_exc()
+            return None
+
+    def parents(self, list = []):
+
+        node = self
+
+        if not list:
+            list = []
+
+        parent = node.parent()
+        if parent and parent.get("id") and parent.get("id") != node.get("id"):
+            list.append(parent)
+            return parent.parents(list)
+
+        return list
+
+    def path(self):
+        return [ele for ele in reversed(self.parents([self]))]
+
+    def children(self):
 
         node = self
 
@@ -3956,6 +4083,9 @@ class GremlinFSVertex(GremlinFSNode):
             )
 
         return []
+
+    def readFolderEntries(self):
+        return self.children();
 
 
 
@@ -5045,7 +5175,6 @@ class GremlinFSOperations(Operations):
     #     raise FuseOSError(errno.ENOTTY)
 
     def link(self, target, source):
-
         self.notReadOnly()
 
         created = False
