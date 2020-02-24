@@ -1,0 +1,77 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf470
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww23080\viewh12940\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \
+Graph FS (gfs)\
+--------------------\
+\
+- Mountable FS in linux/unix backed by graph storage\
+\
+- Based on apache tinkerpop, means we can be graph DB agnostic, can inflate a graphFS from any graph DB that supports tinkerpop\
+\
+- FS in the cloud!!\
+\
+- REST API access/CLI access for FS LCM operations, no need for ssh/scp for simple FS updates\
+\
+- Full availability of queries via tinkerpop, can \
+\
+- Multi layered:\
+-- Much like ZFS, bottom layer provides base, top layer provides deltas on top\
+-- Can stack multiple FSs, where one layer provides a base for another\
+-- Perfect for containers and multi tenant apps where different service instances of a service type are implemented as FS layers\
+-- Based off of something like a context, where a context has a parent context\
+-- Overriden/new files and folders has to belong to the current context only, at the same time it has to be clear that an overridden file overrides a specific file in the parent context layer. We can for example use multiple UUIDs here: Each file has a UUID regardless of context layer, and each context layer has a UUID. Then the file + context pointer becomes fileUUID::contextUUID\
+-- Context: indicate base FS, multiple FSs supported within same graph\
+-- Layer: indicate hierarchical relationships. Context + layer + perhaps version uniquely indicate a particular file with contents. Layers override base data with delta data.\
+\
+- Built in versioning\
+-- New version criteria is configurable on a per something basis, i.e. per file/per folder/per FS\
+-- Can revert/fast forward FS instances to specific versions\
+\
+- Support normal FS types via graph built-ins\
+-- File type - graph DB class, can support multiple file types\
+-- Folder type - graph DB class, can support multiple folder types if supported in FS driver\
+-- File - graph DB model/vertex\
+-- Folder - graph DB model/vertex\
+-- Child/Node/subfolder - graph DB link/edge \
+-- Link - graph DB link/edge \
+-- inode - hopefully we can map inodes straight to graph db vertex id, which would speed up read operations\
+\
+- Support normal FS operations via graph built-ins\
+-- touch/create/mkdir - new vertex\
+-- copy/mv - new edge\
+-- Access/security - TBD, could potentially support multiple access controls at once, unix/dos/ntfs/etc. I.e. one impl. can support multiple use cases\
+\
+\
+Architecture:\
+\
+Local, on host:\
+- gfs FS driver: kernel/user space, mounts filesystem via gfs\
+- local gfs client, listens to and handles gfs events, reboots host/services based on event. Manages other gfs LCM operations, perhaps even mounting/unmounting\
+\
+Close to host, but not on host:\
+- gfs service that gfs FS driver talks to, via some API. Provides local caching, messaging etc.\
+\
+Cloud:\
+- graph DB somewhere that gfs services talk to.\
+\
+\
+\
+HOST					CLOSE					CLOUD\
+--------					----------					-----------\
+gfs driver	-- talks to -->		gfs service       --> tinkerpop -->		graph DB\
+	^				REST API for remote control\
+	|\
+	controls\
+	|\
+gfs client	<-- events --		\
+\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 Step 1) deploy your container with /etc mounted as gfs. 2) Container boots, reads /etc/apache.conf or whatever and starts. 3) You want to switch ports on already running server, use REST api, pull up right context and layer of container FS, change port, save. 4) saving file sends alter message to anyone subscribing to messages about this FS, like the container using it. 5) Container reboots automatically based on some messaging and file path policy.\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+}
