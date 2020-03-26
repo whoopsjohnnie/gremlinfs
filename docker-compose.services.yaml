@@ -13,6 +13,9 @@ services:
       - ./data/orientdb/databases:/orientdb/databases
     environment:
       ORIENTDB_ROOT_PASSWORD: root
+    hostname: "orientdb"
+    networks:
+      - gremlinfs
     ports:
       - 2424:2424
       - 2480:2480
@@ -20,49 +23,21 @@ services:
 
   rabbitmq:
     image: "rabbitmq:3-management"
-    hostname: "rabbitmq"
     environment:
       RABBITMQ_DEFAULT_USER: "rabbitmq"
       RABBITMQ_DEFAULT_PASS: "rabbitmq"
       RABBITMQ_DEFAULT_VHOST: "/"
       RABBITMQ_LOG_BASE: "/var/log/rabbitmq"
+    hostname: "rabbitmq"
+    networks:
+      - gremlinfs
     ports:
       - "15672:15672"
       - "5672:5672"
     labels:
       NAME: "rabbitmq"
 
-  theia:
-    build:
-      context: ./
-      dockerfile: Dockerfile.theia
-    expose:
-      - 3000
-    ports:
-      - 3000:3000
-    volumes:
-      - "./:/app"
-    environment:
-      GFS_FS_NAME: "gremlinfs1"
-      GFS_FS_MOUNT: /home/project
-      GREMLIN_HOST: "orientdb"
-      GREMLIN_PORT: "8182"
-      GREMLIN_USERNAME: "root"
-      GREMLIN_PASSWORD: "root"
-      RABBITMQ_HOST: "rabbitmq"
-      RABBITMQ_PORT: "5672"
-      RABBITMQ_USERNAME: "rabbitmq"
-      RABBITMQ_PASSWORD: "rabbitmq"
-    privileged: true
-    cap_add: 
-      - SYS_ADMIN
-      - MKNOD
-    devices:
-      - "/dev/fuse:/dev/fuse"
-    restart: on-failure
-    depends_on:
-      - orientdb
-      - rabbitmq
-    links:
-      - orientdb
-      - rabbitmq
+networks:
+  gremlinfs: 
+    external:
+      name: gremlinfs
