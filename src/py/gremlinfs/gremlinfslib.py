@@ -50,6 +50,43 @@ logging.basicConfig(level=config.gremlinfs['log_level'])
 
 
 
+class GremlinFSLogger():
+
+    @classmethod
+    def getLogger(clazz, name):
+        return GremlinFSLogger(name)
+
+    @classmethod
+    def getLogLevel(clazz):
+        return None
+
+    def __init__(self, name, **kwargs):
+        self._name = name
+        self._logger = logging.getLogger(name)
+
+    def debug(self, *args, **kwargs):
+        self._logger.debug(*args, **kwargs)
+
+    def info(self, *args, **kwargs):
+        self._logger.info(*args, **kwargs)
+
+    def warning(self, *args, **kwargs):
+        self._logger.warning(*args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        self._logger.error(*args, **kwargs)
+
+    def critical(self, *args, **kwargs):
+        self._logger.critical(*args, **kwargs)
+
+    def exception(self, *args, **kwargs):
+        self._logger.exception(*args, **kwargs)
+
+    def log(self, lvl, *args, **kwargs):
+        self._logger.log(lvl, *args, **kwargs)
+
+
+
 class GremlinFSError(Exception):
 
     def __init__(self, path = None):
@@ -86,6 +123,8 @@ class GremlinFSIsFolderError(GremlinFSError):
 
 
 class GremlinFSBase():
+
+    logger = GremlinFSLogger.getLogger("GremlinFSBase")
 
     def all(self, prefix = None):
         props = {}
@@ -128,6 +167,8 @@ class GremlinFSBase():
 
 
 class GremlinFSPath(GremlinFSBase):
+
+    logger = GremlinFSLogger.getLogger("GremlinFSPath")
 
     @classmethod
     def paths(clazz):
@@ -552,9 +593,9 @@ class GremlinFSPath(GremlinFSBase):
     # 
 
     def enter(self, functioname, *args, **kwargs):
-        # logging.debug(' GremlinFSPath: ENTER: %s ' % (functioname))
-        # logging.debug(args)
-        # logging.debug(kwargs)
+        # self.logger.debug(' GremlinFSPath: ENTER: %s ' % (functioname))
+        # self.logger.debug(args)
+        # self.logger.debug(kwargs)
         pass
 
     # 
@@ -2213,6 +2254,8 @@ class GremlinFSPath(GremlinFSBase):
 
 class GremlinFSNode(GremlinFSBase):
 
+    logger = GremlinFSLogger.getLogger("GremlinFSNode")
+
     @classmethod
     def parse(clazz, id):
         return None
@@ -2477,7 +2520,7 @@ class GremlinFSNode(GremlinFSBase):
                         prefix = prefix
                     )
                 except Exception as e:
-                    logging.error(' GremlinFS: setProperties exception ')
+                    self.logger.exception(' GremlinFS: setProperties exception ', e)
 
     def getProperties(self, prefix = None):
 
@@ -2635,7 +2678,7 @@ class GremlinFSNode(GremlinFSBase):
                         )
 
                 except Exception as e:
-                    logging.error(' GremlinFS: invoke handler render exception ')
+                    self.logger.exception(' GremlinFS: invoke handler render exception ')
                     script = data
 
                 executable = "sh"
@@ -2646,7 +2689,7 @@ class GremlinFSNode(GremlinFSBase):
                 )
 
         except Exception as e:
-            logging.error(' GremlinFS: node invoke exception ')
+            self.logger.exception(' GremlinFS: node invoke exception ')
 
     def event(self, event, chain = [], data = {}, propagate = True):
 
@@ -2738,11 +2781,13 @@ class GremlinFSNode(GremlinFSBase):
                         )
 
         except Exception as e:
-            logging.error(' GremlinFS: node event exception ')
+            self.logger.exception(' GremlinFS: node event exception ', e)
 
 
 
 class GremlinFSVertex(GremlinFSNode):
+
+    logger = GremlinFSLogger.getLogger("GremlinFSVertex")
 
     @classmethod
     def parse(clazz, id):
@@ -2873,7 +2918,7 @@ class GremlinFSVertex(GremlinFSNode):
                         )
                     )
             except Exception as e:
-                # logging.error(' GremlinFS: node from path ID exception ')
+                # self.logger.exception(' GremlinFS: node from path ID exception ', e)
                 return None
 
         elif parts and \
@@ -2895,7 +2940,7 @@ class GremlinFSVertex(GremlinFSNode):
                         )
                     )
             except Exception as e:
-                # logging.error(' GremlinFS: node from path ID exception ')
+                # self.logger.exception(' GremlinFS: node from path ID exception ', e)
                 return None
 
         elif parts and \
@@ -2907,7 +2952,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
                 )
             except Exception as e:
-                # logging.error(' GremlinFS: node from path ID exception ')
+                # self.logger.exception(' GremlinFS: node from path ID exception ', e)
                 return None
 
         # Fallback try as straigt up DB id
@@ -2920,7 +2965,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
                 )
             except Exception as e:
-                # logging.error(' GremlinFS: node from path ID exception ')
+                # self.logger.exception(' GremlinFS: node from path ID exception ', e)
                 return None
 
         return None
@@ -2975,7 +3020,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
         elif node and label:
@@ -3000,7 +3045,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
         elif node:
@@ -3021,7 +3066,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
     def edge(self, edgeid, ine = True):
@@ -3061,7 +3106,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
         elif node and label:
@@ -3086,7 +3131,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
         return None
@@ -3153,7 +3198,7 @@ class GremlinFSVertex(GremlinFSNode):
                         )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
         elif node and label:
@@ -3199,7 +3244,7 @@ class GremlinFSVertex(GremlinFSNode):
                         )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
         elif node:
@@ -3237,7 +3282,7 @@ class GremlinFSVertex(GremlinFSNode):
                         )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
     def edgenode(self, edgeid, ine = True, inv = True):
@@ -3302,7 +3347,7 @@ class GremlinFSVertex(GremlinFSNode):
                         )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
         elif node and label:
@@ -3348,7 +3393,7 @@ class GremlinFSVertex(GremlinFSNode):
                         )
 
             except Exception as e:
-                # logging.error(' GremlinFS: edge from path ID exception ')
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
                 return None
 
     def inbound(self, edgeid = None):
@@ -3496,7 +3541,7 @@ class GremlinFSVertex(GremlinFSNode):
             # self.graph().tx().commit()
 
         except Exception as e:
-            logging.error(' GremlinFS: create exception ')
+            self.logger.exception(' GremlinFS: create exception ', e)
             return None
 
         return newnode
@@ -3528,7 +3573,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
             except Exception as e:
-                logging.error(' GremlinFS: rename exception ')
+                self.logger.exception(' GremlinFS: rename exception ', e)
                 return None
 
         try:
@@ -3542,7 +3587,7 @@ class GremlinFSVertex(GremlinFSNode):
             )
 
         except Exception as e:
-            logging.error(' GremlinFS: rename exception ')
+            self.logger.exception(' GremlinFS: rename exception ', e)
             return None
 
         return newnode
@@ -3598,7 +3643,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
             except Exception as e:
-                logging.error(' GremlinFS: move exception ')
+                self.logger.exception(' GremlinFS: move exception ', e)
                 return None
 
         try:
@@ -3612,7 +3657,7 @@ class GremlinFSVertex(GremlinFSNode):
             )
 
         except Exception as e:
-            logging.error(' GremlinFS: move exception ')
+            self.logger.exception(' GremlinFS: move exception ', e)
             return None
 
         return newnode
@@ -3633,7 +3678,7 @@ class GremlinFSVertex(GremlinFSNode):
             ).drop().next()
 
         except Exception as e:
-            # logging.error(' GremlinFS: delete exception ')
+            # self.logger.exception(' GremlinFS: delete exception ', e)
             return False
 
         return True
@@ -3678,7 +3723,7 @@ class GremlinFSVertex(GremlinFSNode):
                 readfn = label_config["readfn"]
 
         except Exception as e:
-            logging.error(' GremlinFS: readNode template exception ')
+            self.logger.exception(' GremlinFS: readNode template exception ', e)
 
 
         try:
@@ -3707,7 +3752,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
         except Exception as e:
-            logging.error(' GremlinFS: readNode render exception ')
+            self.logger.exception(' GremlinFS: readNode render exception ', e)
 
         return data
 
@@ -3776,7 +3821,7 @@ class GremlinFSVertex(GremlinFSNode):
             # self.graph().tx().commit()
 
         except Exception as e:
-            logging.error(' GremlinFS: createFolder exception ')
+            self.logger.exception(' GremlinFS: createFolder exception ', e)
             return None
 
         return newfolder
@@ -3841,7 +3886,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
         except Exception as e:
-            logging.error(' GremlinFS: createLink exception ')
+            self.logger.exception(' GremlinFS: createLink exception ', e)
             return None
 
         return newnode
@@ -3925,7 +3970,7 @@ class GremlinFSVertex(GremlinFSNode):
             )
 
         except Exception as e:
-            # logging.error(' GremlinFS: parent exception ')
+            # self.logger.exception(' GremlinFS: parent exception ', e)
             return None
 
     def parents(self, list = []):
@@ -3975,6 +4020,8 @@ class GremlinFSVertex(GremlinFSNode):
 
 
 class GremlinFSEdge(GremlinFSNode):
+
+    logger = GremlinFSLogger.getLogger("GremlinFSEdge")
 
     @classmethod
     def parse(clazz, id):
@@ -4044,13 +4091,15 @@ class GremlinFSEdge(GremlinFSNode):
                     )
 
             except Exception as e:
-                # logging.error(' GremlinFS: node exception ')
+                # self.logger.exception(' GremlinFS: node exception ', e)
                 return None
 
 
 
 # Decorator/Adapter pattern
 class GremlinFSNodeWrapper(GremlinFSBase):
+
+    logger = GremlinFSLogger.getLogger("GremlinFSNodeWrapper")
 
     def __init__(self, node):
         self.node = node
@@ -4143,7 +4192,7 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                             # props[key.replace(".", "__")] = str(value).strip()
                             props[key] = str(value).strip()
                 except Exception as e:
-                    logging.error(' GremlinFS: all exception ')
+                    self.logger.exception(' GremlinFS: all exception ', e)
 
         return props
 
@@ -4189,7 +4238,7 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                     prop = str(ret).strip()
 
             except Exception as e:
-                logging.error(' GremlinFS: get exception ')
+                self.logger.exception(' GremlinFS: get exception ', e)
 
         else:
             prop = existing
@@ -4202,6 +4251,8 @@ class GremlinFSNodeWrapper(GremlinFSBase):
 
 
 class GremlinFSUtils(GremlinFSBase):
+
+    logger = GremlinFSLogger.getLogger("GremlinFSUtils")
 
     @classmethod
     def conf(clazz, key, default = None):
@@ -4349,6 +4400,8 @@ class GremlinFS():
     or the corresponding system call man page.
     '''
 
+    logger = GremlinFSLogger.getLogger("GremlinFS")
+
     __instance = None
 
     @classmethod
@@ -4391,7 +4444,7 @@ class GremlinFS():
 
         self.mount_point = mount_point
 
-        logging.debug(' GremlinFS mount point: %s' % (str(self.mount_point)))
+        self.logger.info(' GremlinFS mount point: ' + self.mount_point)
 
         self.gremlin_host = gremlin_host
         self.gremlin_port = gremlin_port
@@ -4400,21 +4453,21 @@ class GremlinFS():
 
         self.gremlin_url = "ws://" + self.gremlin_host + ":" + self.gremlin_port + "/gremlin"
 
-        logging.debug(' GremlinFS gremlin host: %s' % (str(self.gremlin_host)))
-        logging.debug(' GremlinFS gremlin port: %s' % (str(self.gremlin_port)))
-        logging.debug(' GremlinFS gremlin username: %s' % (str(self.gremlin_username)))
-        # logging.debug(' GremlinFS gremlin password: %s' % (str(self.gremlin_password)))
-        logging.debug(' GremlinFS gremlin URL: %s' % (str(self.gremlin_url)))
+        self.logger.info(' GremlinFS gremlin host: ' + self.gremlin_host)
+        self.logger.info(' GremlinFS gremlin port: ' + self.gremlin_port)
+        self.logger.info(' GremlinFS gremlin username: ' + self.gremlin_username)
+        # self.logger.debug(' GremlinFS gremlin password: ' + self.gremlin_password)
+        self.logger.info(' GremlinFS gremlin URL: ' + self.gremlin_url)
 
         self.rabbitmq_host = rabbitmq_host
         self.rabbitmq_port = rabbitmq_port
         self.rabbitmq_username = rabbitmq_username
         self.rabbitmq_password = rabbitmq_password
 
-        logging.debug(' GremlinFS rabbitmq host: %s' % (str(self.rabbitmq_host)))
-        logging.debug(' GremlinFS rabbitmq port: %s' % (str(self.rabbitmq_port)))
-        logging.debug(' GremlinFS rabbitmq username: %s' % (str(self.rabbitmq_username)))
-        # logging.debug(' GremlinFS rabbitmq password: %s' % (str(self.rabbitmq_password)))
+        self.logger.info(' GremlinFS rabbitmq host: ' + self.rabbitmq_host)
+        self.logger.info(' GremlinFS rabbitmq port: ' + self.rabbitmq_port)
+        self.logger.info(' GremlinFS rabbitmq username: ' + self.rabbitmq_username)
+        # self.logger.debug(' GremlinFS rabbitmq password: ' + self.rabbitmq_password)
 
         self._g = None
         self._ro = None
@@ -4543,8 +4596,8 @@ class GremlinFS():
             data["parent"]["name"] = parent.get("name", None)
             data["parent"]["label"] = parent.get("label", None)
 
-        logging.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT ')
-        logging.info(data)
+        self.logger.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT ')
+        self.logger.info(data)
 
         try:
 
@@ -4560,7 +4613,7 @@ class GremlinFS():
 
         except pika.exceptions.ConnectionClosedByBroker:
 
-            logging.info(' GremlinFS: Outbound AMQP/RABBIT event, connection was closed, retry ')
+            self.logger.info(' GremlinFS: Outbound AMQP/RABBIT event, connection was closed, retry ')
 
             self._mq = None
 
@@ -4576,13 +4629,13 @@ class GremlinFS():
 
         # Do not recover on channel errors
         except pika.exceptions.AMQPChannelError as err:
-            logging.error(' GremlinFS: Outbound AMQP/RABBIT event error: {} '.format(err))
+            self.logger.error(' GremlinFS: Outbound AMQP/RABBIT event error: {} '.format(err))
             return
 
         # Recover on all other connection errors
         except pika.exceptions.AMQPConnectionError:
 
-            logging.info(' GremlinFS: Outbound AMQP/RABBIT event, connection was closed, retry ')
+            self.logger.info(' GremlinFS: Outbound AMQP/RABBIT event, connection was closed, retry ')
 
             self._mq = None
 
@@ -4597,10 +4650,11 @@ class GremlinFS():
             )
 
 #         except Exception as e:
-#             logging.error(' GremlinFS: MQ/AMQP send exception ')
+#             self.logger.exception(' GremlinFS: MQ/AMQP send exception ', e)
 
     def mqonevent(self, node, event, chain = [], data = {}, propagate = True):
-        logging.info(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT ')
+
+        self.logger.info(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT ')
 
         try:
 
@@ -4613,11 +4667,11 @@ class GremlinFS():
                 )
 
         except Exception as e:
-            logging.error(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT EXCEPTION ')
+            self.logger.exception(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT EXCEPTION ', e)
 
     def mqonmessage(self, ch, method, properties, body):
 
-        logging.info(' GremlinFS: INBOUND AMQP/RABBIT ON MESSAGE ')
+        self.logger.info(' GremlinFS: INBOUND AMQP/RABBIT ON MESSAGE ')
 
         try:
 
@@ -4639,7 +4693,7 @@ class GremlinFS():
                 )
 
         except Exception as e:
-            logging.error(' GremlinFS: INBOUND AMQP/RABBIT ON MESSAGE EXCEPTION ')
+            self.logger.exception(' GremlinFS: INBOUND AMQP/RABBIT ON MESSAGE EXCEPTION ', e)
 
     def query(self, query, node = None, default = None):
         return self.utils().query(query, node, default)
@@ -4714,9 +4768,9 @@ class GremlinFS():
                     try:
                         label_config["compiled"] = re.compile(label_config["pattern"])
                     except Exception as e:
-                        logging.error(' GremlinFS: failed to compile pattern %s ' % (
+                        self.logger.exception(' GremlinFS: failed to compile pattern %s ' % (
                             label_config["pattern"]
-                        ))
+                        ), e)
                     pass
 
         self._config = config
