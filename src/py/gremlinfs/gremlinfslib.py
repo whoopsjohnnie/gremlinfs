@@ -15,7 +15,6 @@ import errno
 import stat
 import uuid
 import re
-import traceback
 import string
 
 import contextlib
@@ -27,9 +26,6 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-
-# 
-from fuse import FuseOSError
 
 # 3.3.0
 # http://tinkerpop.apache.org/docs/3.3.0-SNAPSHOT/reference/#gremlin-python
@@ -51,6 +47,41 @@ import config
 
 # 
 logging.basicConfig(level=config.gremlinfs['log_level'])
+
+
+
+class GremlinFSError(Exception):
+
+    def __init__(self, path = None):
+        self.path = path
+
+
+
+class GremlinFSExistsError(GremlinFSError):
+
+    def __init__(self, path = None):
+        self.path = path
+
+
+
+class GremlinFSNotExistsError(GremlinFSError):
+
+    def __init__(self, path = None):
+        self.path = path
+
+
+
+class GremlinFSIsFileError(GremlinFSError):
+
+    def __init__(self, path = None):
+        self.path = path
+
+
+
+class GremlinFSIsFolderError(GremlinFSError):
+
+    def __init__(self, path = None):
+        self.path = path
 
 
 
@@ -391,9 +422,9 @@ class GremlinFSPath(GremlinFSBase):
                 # else:
                 #     # Note; Unless I throw this here, I am unable to
                 #     # touch files as attributes. I think the default
-                #     # here should be to throw FuseOSError(errno.ENOENT)
+                #     # here should be to throw GremlinFSNotExistsError
                 #     # unless file/node is actually found
-                #     raise FuseOSError(errno.ENOENT)
+                #     raise GremlinFSNotExistsError
                 else:
                     match.update({
                         "path": "vertex_property",
@@ -830,7 +861,7 @@ class GremlinFSPath(GremlinFSBase):
             parent = self.parent()
 
             if not newname:
-                raise FuseOSError(errno.ENOENT)
+                raise GremlinFSNotExistsError(self)
 
             parent = self.parent()
             newfolder = GremlinFSVertex.make(
@@ -872,10 +903,10 @@ class GremlinFSPath(GremlinFSBase):
             # Do not create an A vertex in /V/B, unless A is vertex
             if label != "vertex":
                 if label != newlabel:
-                    raise FuseOSError(errno.ENOENT)
+                    raise GremlinFSNotExistsError(self)
 
             if not newname:
-                raise FuseOSError(errno.ENOENT)
+                raise GremlinFSNotExistsError(self)
 
             if GremlinFS.operations().isFolderLabel(newlabel):
                 newfolder = GremlinFSVertex.make(
@@ -1180,7 +1211,7 @@ class GremlinFSPath(GremlinFSBase):
             parent = self.parent()
 
             if not newname:
-                raise FuseOSError(errno.ENOENT)
+                raise GremlinFSNotExistsError(self)
 
             newfile = GremlinFSVertex.make(
                 name = newname,
@@ -1775,7 +1806,7 @@ class GremlinFSPath(GremlinFSBase):
                 if label_config and "writefn" in label_config:
                     writefn = label_config["writefn"]
 
-            except:
+            except Exception as e:
                 pass
 
             try:
@@ -1787,7 +1818,7 @@ class GremlinFSPath(GremlinFSBase):
                         data = data
                     )
 
-            except:
+            except Exception as e:
                 pass
 
             return data
@@ -2418,7 +2449,7 @@ class GremlinFSNode(GremlinFSBase):
                 name
             ).drop().next()
             # )
-        except:
+        except Exception as e:
             pass
 
     def setProperties(self, properties, prefix = None):
@@ -2445,9 +2476,8 @@ class GremlinFSNode(GremlinFSBase):
                         value,
                         prefix = prefix
                     )
-                except:
+                except Exception as e:
                     logging.error(' GremlinFS: setProperties exception ')
-                    traceback.print_exc()
 
     def getProperties(self, prefix = None):
 
@@ -2604,9 +2634,8 @@ class GremlinFSNode(GremlinFSBase):
                             template, templatectx
                         )
 
-                except:
+                except Exception as e:
                     logging.error(' GremlinFS: invoke handler render exception ')
-                    traceback.print_exc()
                     script = data
 
                 executable = "sh"
@@ -2616,9 +2645,8 @@ class GremlinFSNode(GremlinFSBase):
                     env = env
                 )
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: node invoke exception ')
-            traceback.print_exc()
 
     def event(self, event, chain = [], data = {}, propagate = True):
 
@@ -2709,9 +2737,8 @@ class GremlinFSNode(GremlinFSBase):
                             propagate = propagate
                         )
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: node event exception ')
-            traceback.print_exc()
 
 
 
@@ -2845,7 +2872,7 @@ class GremlinFSVertex(GremlinFSNode):
                             "uuid", parts["uuid"]
                         )
                     )
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: node from path ID exception ')
                 return None
 
@@ -2867,7 +2894,7 @@ class GremlinFSVertex(GremlinFSNode):
                             "uuid", parts["uuid"]
                         )
                     )
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: node from path ID exception ')
                 return None
 
@@ -2879,7 +2906,7 @@ class GremlinFSVertex(GremlinFSNode):
                         "uuid", parts["uuid"]
                     )
                 )
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: node from path ID exception ')
                 return None
 
@@ -2892,7 +2919,7 @@ class GremlinFSVertex(GremlinFSNode):
                         id
                     )
                 )
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: node from path ID exception ')
                 return None
 
@@ -2947,9 +2974,8 @@ class GremlinFSVertex(GremlinFSNode):
                         )
                     )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
         elif node and label:
@@ -2973,9 +2999,8 @@ class GremlinFSVertex(GremlinFSNode):
                         )
                     )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
         elif node:
@@ -2995,9 +3020,8 @@ class GremlinFSVertex(GremlinFSNode):
                         ).outE()
                     )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
     def edge(self, edgeid, ine = True):
@@ -3036,9 +3060,8 @@ class GremlinFSVertex(GremlinFSNode):
                         )
                     )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
         elif node and label:
@@ -3062,9 +3085,8 @@ class GremlinFSVertex(GremlinFSNode):
                         )
                     )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
         return None
@@ -3130,9 +3152,8 @@ class GremlinFSVertex(GremlinFSNode):
                             ).outV()
                         )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
         elif node and label:
@@ -3177,9 +3198,8 @@ class GremlinFSVertex(GremlinFSNode):
                             ).outV()
                         )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
         elif node:
@@ -3216,9 +3236,8 @@ class GremlinFSVertex(GremlinFSNode):
                             ).outE().outV()
                         )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
     def edgenode(self, edgeid, ine = True, inv = True):
@@ -3282,9 +3301,8 @@ class GremlinFSVertex(GremlinFSNode):
                             ).outV()
                         )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
         elif node and label:
@@ -3329,9 +3347,8 @@ class GremlinFSVertex(GremlinFSNode):
                             ).outV()
                         )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: edge from path ID exception ')
-                # traceback.print_exc()
                 return None
 
     def inbound(self, edgeid = None):
@@ -3368,9 +3385,9 @@ class GremlinFSVertex(GremlinFSNode):
         node = self
 
         if not node:
-            raise FuseOSError(errno.ENOENT)
+            raise GremlinFSNotExistsError(self)
         if not self.isFolder():
-            raise FuseOSError(errno.ENOENT)
+            raise GremlinFSNotExistsError(self)
         return node
 
     def isFile(self):
@@ -3390,11 +3407,11 @@ class GremlinFSVertex(GremlinFSNode):
         node = self
 
         if not node:
-            raise FuseOSError(errno.ENOENT)
+            raise GremlinFSNotExistsError(self)
         if self.isFolder():
-            raise FuseOSError(errno.EISDIR)
+            raise GremlinFSIsFolderError(self)
         elif not self.isFile():
-            raise FuseOSError(errno.ENOENT)
+            raise GremlinFSNotExistsError(self)
         return node
 
     def create(self, parent = None, mode = None, owner = None, group = None):
@@ -3478,9 +3495,8 @@ class GremlinFSVertex(GremlinFSNode):
 
             # self.graph().tx().commit()
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: create exception ')
-            traceback.print_exc()
             return None
 
         return newnode
@@ -3511,9 +3527,8 @@ class GremlinFSVertex(GremlinFSNode):
                     )
                 )
 
-            except:
+            except Exception as e:
                 logging.error(' GremlinFS: rename exception ')
-                traceback.print_exc()
                 return None
 
         try:
@@ -3526,9 +3541,8 @@ class GremlinFSVertex(GremlinFSNode):
                 )
             )
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: rename exception ')
-            traceback.print_exc()
             return None
 
         return newnode
@@ -3560,7 +3574,7 @@ class GremlinFSVertex(GremlinFSNode):
                 ).drop()
             )
 
-        except:
+        except Exception as e:
             pass
 
         if parent:
@@ -3583,9 +3597,8 @@ class GremlinFSVertex(GremlinFSNode):
                     ))
                 )
 
-            except:
+            except Exception as e:
                 logging.error(' GremlinFS: move exception ')
-                traceback.print_exc()
                 return None
 
         try:
@@ -3598,9 +3611,8 @@ class GremlinFSVertex(GremlinFSNode):
                 )
             )
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: move exception ')
-            traceback.print_exc()
             return None
 
         return newnode
@@ -3620,9 +3632,8 @@ class GremlinFSVertex(GremlinFSNode):
                 'filesystem', self.config("fs_id")
             ).drop().next()
 
-        except:
+        except Exception as e:
             # logging.error(' GremlinFS: delete exception ')
-            # traceback.print_exc()
             return False
 
         return True
@@ -3666,9 +3677,8 @@ class GremlinFSVertex(GremlinFSNode):
             elif label_config and "readfn" in label_config:
                 readfn = label_config["readfn"]
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: readNode template exception ')
-            traceback.print_exc()
 
 
         try:
@@ -3696,9 +3706,8 @@ class GremlinFSVertex(GremlinFSNode):
                     data = data
                 )
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: readNode render exception ')
-            traceback.print_exc()
 
         return data
 
@@ -3766,9 +3775,8 @@ class GremlinFSVertex(GremlinFSNode):
 
             # self.graph().tx().commit()
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: createFolder exception ')
-            traceback.print_exc()
             return None
 
         return newfolder
@@ -3832,9 +3840,8 @@ class GremlinFSVertex(GremlinFSNode):
                     ))
                 )
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: createLink exception ')
-            traceback.print_exc()
             return None
 
         return newnode
@@ -3898,7 +3905,7 @@ class GremlinFSVertex(GremlinFSNode):
                         ).drop()
                     )
 
-        except:
+        except Exception as e:
             pass
 
         return True
@@ -3917,9 +3924,8 @@ class GremlinFSVertex(GremlinFSNode):
                 ).inV().valueMap(True).next()
             )
 
-        except:
+        except Exception as e:
             # logging.error(' GremlinFS: parent exception ')
-            # traceback.print_exc()
             return None
 
     def parents(self, list = []):
@@ -4037,9 +4043,8 @@ class GremlinFSEdge(GremlinFSNode):
                         ).outV()
                     )
 
-            except:
+            except Exception as e:
                 # logging.error(' GremlinFS: node exception ')
-                # traceback.print_exc()
                 return None
 
 
@@ -4093,7 +4098,7 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                 elif len(edgenodes) == 1:
                     return GremlinFSNodeWrapper(edgenodes[0])
 
-        except:
+        except Exception as e:
             pass
 
         return self.get(attr)
@@ -4137,9 +4142,8 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                             # given properties has to use '__' to indicated '.'
                             # props[key.replace(".", "__")] = str(value).strip()
                             props[key] = str(value).strip()
-                except:
+                except Exception as e:
                     logging.error(' GremlinFS: all exception ')
-                    traceback.print_exc()
 
         return props
 
@@ -4184,9 +4188,8 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                 if ret:
                     prop = str(ret).strip()
 
-            except:
+            except Exception as e:
                 logging.error(' GremlinFS: get exception ')
-                traceback.print_exc()
 
         else:
             prop = existing
@@ -4209,12 +4212,12 @@ class GremlinFSUtils(GremlinFSBase):
     @classmethod
     def missing(clazz, value):
         if value:
-            raise FuseOSError(errno.EEXIST)
+            raise GremlinFSExistsError()
 
     @classmethod
     def found(clazz, value):
         if not value:
-            raise FuseOSError(errno.ENOENT)
+            raise GremlinFSNotExistsError()
         return value
 
     @classmethod
@@ -4339,7 +4342,7 @@ class GremlinFS():
 
     '''
     This class should be subclassed and passed as an argument to FUSE on
-    initialization. All operations should raise a FuseOSError exception on
+    initialization. All operations should raise a GremlinFSError exception on
     error.
 
     When in doubt of what an operation should do, check the FUSE header file
@@ -4593,9 +4596,8 @@ class GremlinFS():
                 )
             )
 
-#         except:
+#         except Exception as e:
 #             logging.error(' GremlinFS: MQ/AMQP send exception ')
-#             traceback.print_exc()
 
     def mqonevent(self, node, event, chain = [], data = {}, propagate = True):
         logging.info(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT ')
@@ -4610,9 +4612,8 @@ class GremlinFS():
                     propagate = True
                 )
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT EXCEPTION ')
-            traceback.print_exc()
 
     def mqonmessage(self, ch, method, properties, body):
 
@@ -4637,9 +4638,8 @@ class GremlinFS():
                     propagate = True
                 )
 
-        except:
+        except Exception as e:
             logging.error(' GremlinFS: INBOUND AMQP/RABBIT ON MESSAGE EXCEPTION ')
-            traceback.print_exc()
 
     def query(self, query, node = None, default = None):
         return self.utils().query(query, node, default)
@@ -4713,7 +4713,7 @@ class GremlinFS():
                 if "pattern" in label_config:
                     try:
                         label_config["compiled"] = re.compile(label_config["pattern"])
-                    except:
+                    except Exception as e:
                         logging.error(' GremlinFS: failed to compile pattern %s ' % (
                             label_config["pattern"]
                         ))
