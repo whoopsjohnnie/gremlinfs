@@ -75,6 +75,7 @@ gremlinfs = dict(
     log_level = logging.INFO,
 
     mq_exchange = 'gfs-exchange',
+    mq_queue = 'gfs-queue',
 
     fs_ns = "gfs1",
     fs_root = None,

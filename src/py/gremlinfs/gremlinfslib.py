@@ -881,11 +881,8 @@ class GremlinFSPath(GremlinFSBase):
             )
 
             self.mqevent(GremlinFSEvent(
-                event = "create_folder",
-                node = newfolder,
-                path = self,
-                parent = parent,
-                mode = mode
+                event = "create_node",
+                node = newfolder
             ))
 
             return True
@@ -926,11 +923,8 @@ class GremlinFSPath(GremlinFSBase):
                 )
 
                 self.mqevent(GremlinFSEvent(
-                    event = "create_folder",
-                    node = newfolder,
-                    path = self,
-                    parent = None,
-                    mode = mode
+                    event = "create_node",
+                    node = newfolder
                 ))
 
             else:
@@ -944,11 +938,8 @@ class GremlinFSPath(GremlinFSBase):
                 )
 
                 self.mqevent(GremlinFSEvent(
-                    event = "create_file",
-                    node = newfile,
-                    path = self,
-                    parent = None,
-                    mode = mode
+                    event = "create_node",
+                    node = newfile
                 ))
 
             return True
@@ -1247,11 +1238,8 @@ class GremlinFSPath(GremlinFSBase):
             )
 
             self.mqevent(GremlinFSEvent(
-                event = "create_file",
-                node = newfile,
-                path = self,
-                parent = parent,
-                mode = mode
+                event = "create_node",
+                node = newfile
             ))
 
             return True
@@ -1282,11 +1270,8 @@ class GremlinFSPath(GremlinFSBase):
             )
 
             self.mqevent(GremlinFSEvent(
-                event = "set_property",
-                node = node,
-                path = self,
-                property = self._vertexproperty,
-                value = data
+                event = "update_node",
+                node = node
             ))
 
             return True
@@ -1448,7 +1433,7 @@ class GremlinFSPath(GremlinFSBase):
 
             # Create link from source to target
             # Inbound means source=target and target=source
-            source.createLink(
+            newlink = source.createLink(
                 target = target,
                 label = label,
                 name = name,
@@ -1457,12 +1442,9 @@ class GremlinFSPath(GremlinFSBase):
 
             self.mqevent(GremlinFSEvent(
                 event = "create_link",
-                node = node,
-                path = self,
-                target = target,
-                label = label,
-                name = name,
-                mode = mode
+                link = newlink,
+                source = source,
+                target = target
             ))
 
             return True
@@ -1486,7 +1468,7 @@ class GremlinFSPath(GremlinFSBase):
 
             # Create link from source to target
             # Outbound means source=source and target=target
-            source.createLink(
+            newlink = source.createLink(
                 target = target,
                 label = label,
                 name = name,
@@ -1495,12 +1477,9 @@ class GremlinFSPath(GremlinFSBase):
 
             self.mqevent(GremlinFSEvent(
                 event = "create_link",
-                node = node,
-                path = self,
-                target = target,
-                label = label,
-                name = name,
-                mode = mode
+                link = newlink,
+                source = source,
+                target = target
             ))
 
             return True
@@ -1646,6 +1625,12 @@ class GremlinFSPath(GremlinFSBase):
 
             if label and name:
                 # we are the target, in edge means ...
+                link = node.getLink(
+                    label = label,
+                    name = name,
+                    ine = True
+                )
+
                 node.deleteLink(
                     label = label,
                     name = name,
@@ -1654,15 +1639,17 @@ class GremlinFSPath(GremlinFSBase):
 
                 self.mqevent(GremlinFSEvent(
                     event = "delete_link",
-                    node = node,
-                    path = self,
-                    label = label,
-                    name = name,
-                    ine = True
+                    link = link
                 ))
 
             elif label:
                 # we are the target, in edge means ...
+                link = node.getLink(
+                    label = label,
+                    name = None,
+                    ine = True
+                )
+
                 node.deleteLink(
                     label = label,
                     name = None,
@@ -1671,11 +1658,7 @@ class GremlinFSPath(GremlinFSBase):
 
                 self.mqevent(GremlinFSEvent(
                     event = "delete_link",
-                    node = node,
-                    path = self,
-                    label = label,
-                    name = None,
-                    ine = True
+                    link = link
                 ))
 
             return True
@@ -1693,6 +1676,12 @@ class GremlinFSPath(GremlinFSBase):
 
             if label and name:
                 # we are the target, out edge means ...
+                link = node.getLink(
+                    label = label,
+                    name = name,
+                    ine = False
+                )
+
                 node.deleteLink(
                     label = label,
                     name = name,
@@ -1701,15 +1690,17 @@ class GremlinFSPath(GremlinFSBase):
 
                 self.mqevent(GremlinFSEvent(
                     event = "delete_link",
-                    node = node,
-                    path = self,
-                    label = label,
-                    name = name,
-                    ine = False
+                    link = link
                 ))
 
             elif label:
                 # we are the target, out edge means ...
+                link = node.getLink(
+                    label = label,
+                    name = None,
+                    ine = False
+                )
+
                 node.deleteLink(
                     label = label,
                     name = None,
@@ -1718,11 +1709,7 @@ class GremlinFSPath(GremlinFSBase):
 
                 self.mqevent(GremlinFSEvent(
                     event = "delete_link",
-                    node = node,
-                    path = self,
-                    label = label,
-                    name = None,
-                    ine = False
+                    link = link
                 ))
 
             return True
@@ -1862,13 +1849,8 @@ class GremlinFSPath(GremlinFSBase):
             )
 
             self.mqevent(GremlinFSEvent(
-                event = "set_property",
-                node = node,
-                path = self,
-                property = self.config("data_property"),
-                value = data,
-                offset = offset,
-                encoding = "base64"
+                event = "update_node",
+                node = node
             ))
 
             try:
@@ -1931,12 +1913,8 @@ class GremlinFSPath(GremlinFSBase):
             )
 
             self.mqevent(GremlinFSEvent(
-                event = "set_property",
-                node = node,
-                path = self,
-                property = self._vertexproperty,
-                value = data,
-                offset = offset
+                event = "update_node",
+                node = node
             ))
 
             return data
@@ -1984,11 +1962,8 @@ class GremlinFSPath(GremlinFSBase):
             )
 
             self.mqevent(GremlinFSEvent(
-                event = "clear_property",
-                node = node,
-                path = self,
-                property = self.config("data_property"),
-                value = ""
+                event = "update_node",
+                node = node
             ))
 
             return None
@@ -2020,11 +1995,8 @@ class GremlinFSPath(GremlinFSBase):
             )
 
             self.mqevent(GremlinFSEvent(
-                event = "clear_property",
-                node = node,
-                path = self,
-                property = self._vertexproperty,
-                value = ""
+                event = "update_node",
+                node = node
             ))
 
             return None
@@ -2077,11 +2049,8 @@ class GremlinFSPath(GremlinFSBase):
             node.move(parent)
 
             self.mqevent(GremlinFSEvent(
-                event = "move_node",
-                node = node,
-                path = self,
-                name = newmatch._name,
-                parent = parent
+                event = "update_node",
+                node = node
             ))
 
             return True
@@ -2125,11 +2094,8 @@ class GremlinFSPath(GremlinFSBase):
             )
 
             self.mqevent(GremlinFSEvent(
-                event = "set_property",
-                node = newnode,
-                path = self,
-                property = newname,
-                value = data
+                event = "update_node",
+                node = newnode
             ))
 
             newdata = newnode.readProperty(
@@ -2144,11 +2110,8 @@ class GremlinFSPath(GremlinFSBase):
                 )
 
                 self.mqevent(GremlinFSEvent(
-                    event = "unset_property",
-                    node = oldnode,
-                    path = self,
-                    property = newname,
-                    value = ""
+                    event = "update_node",
+                    node = oldnode
                 ))
 
             return True
@@ -2196,8 +2159,7 @@ class GremlinFSPath(GremlinFSBase):
 
             self.mqevent(GremlinFSEvent(
                 event = "delete_node",
-                node = node,
-                path = self
+                node = node
             ))
 
             return True
@@ -2228,10 +2190,8 @@ class GremlinFSPath(GremlinFSBase):
             )
 
             self.mqevent(GremlinFSEvent(
-                event = "unset_property",
-                node = node,
-                path = self,
-                property = self._vertexproperty
+                event = "update_node",
+                node = node
             ))
 
             return True
@@ -2273,11 +2233,8 @@ class GremlinFSPath(GremlinFSBase):
                 )
 
             self.mqevent(GremlinFSEvent(
-                event = "set_property",
-                node = node,
-                path = self,
-                property = key,
-                value = value
+                event = "update_node",
+                node = node
             ))
 
         return True
@@ -3533,6 +3490,11 @@ class GremlinFSVertex(GremlinFSNode):
             pathuuid = self.utils().genuuid(UUID)
             pathtime = self.utils().gentime()
 
+            self.logger.error(' !! CREATE !! ')
+            self.logger.error(self.utils())
+            self.logger.error(pathuuid)
+            self.logger.error(pathtime)
+
             # txn = self.graph().tx()
 
             newnode = None
@@ -4742,6 +4704,26 @@ class GremlinFSEvent(GremlinFSBase):
     def __init__(self, **kwargs):
         self.setall(kwargs)
 
+    def toJSON(self):
+
+        data = {
+           "event": self.get("event")
+        }
+
+        if self.has("node") and self.get("node"):
+            data["node"] = self.get("node").all()
+
+        if self.has("link") and self.get("link"):
+            data["link"] = self.get("link").all()
+
+        if self.has("source") and self.get("source"):
+            data["source"] = self.get("source").all()
+
+        if self.has("target") and self.get("target"):
+            data["target"] = self.get("target").all()
+
+        return data
+        
 
 
 class GremlinFSConfig(GremlinFSBase):
@@ -4765,6 +4747,7 @@ class GremlinFSConfig(GremlinFSBase):
             "rabbitmq_password": None,
 
             "mq_exchange": 'gfs-exchange',
+            "mq_queue": 'gfs-queue',
 
             "log_level": GremlinFSLogger.getLogLevel(),
 
