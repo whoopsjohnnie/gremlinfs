@@ -896,6 +896,12 @@ class GremlinFSPath(GremlinFSBase):
 
     def createFolder(self, mode = None):
 
+        if self.isFound():
+            raise GremlinFSExistsError(self)
+
+        if self.isFile():
+            raise GremlinFSIsFileError(self)
+
         default = None
         if self._type:
             default = None
@@ -1031,6 +1037,9 @@ class GremlinFSPath(GremlinFSBase):
         return default
 
     def readFolder(self):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
 
         entries = []
 
@@ -1224,9 +1233,17 @@ class GremlinFSPath(GremlinFSBase):
         return entries
 
     def renameFolder(self, newmatch):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         return self.moveNode(newmatch)
 
     def deleteFolder(self):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         return self.deleteNode()
 
 
@@ -1242,6 +1259,12 @@ class GremlinFSPath(GremlinFSBase):
 
 
     def createFile(self, mode = None, data = None):
+
+        if self.isFound():
+            raise GremlinFSExistsError(self)
+
+        if self.isFolder():
+            raise GremlinFSIsFolderError(self)
 
         if not data:
             data = ""
@@ -1343,27 +1366,55 @@ class GremlinFSPath(GremlinFSBase):
         return default
 
     def readFile(self, size = 0, offset = 0):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         data = self.readNode(size, offset)
         if data:
             return data
         return None
 
     def readFileLength(self):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         data = self.readNode()
         if data:
-            return len(data)
+            try:
+                return len(data)
+            except Exception as e:
+                pass
+
         return 0
 
     def writeFile(self, data, offset = 0):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         return self.writeNode(data, offset)
 
     def clearFile(self):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         return self.clearNode()
 
     def renameFile(self, newmatch):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         return self.moveNode(newmatch)
 
     def deleteFile(self):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         return self.deleteNode()
 
 
@@ -1378,6 +1429,12 @@ class GremlinFSPath(GremlinFSBase):
 
 
     def createLink(self, sourcematch, mode = None):
+
+        if self.isFound():
+            raise GremlinFSExistsError(self)
+
+        if not sourcematch.isFound():
+            raise GremlinFSNotExistsError(self)
 
         default = None
         if self._type:
@@ -1506,6 +1563,9 @@ class GremlinFSPath(GremlinFSBase):
 
     def readLink(self):
 
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         default = None
         if self._type:
             default = None
@@ -1576,6 +1636,9 @@ class GremlinFSPath(GremlinFSBase):
         return default
 
     def deleteLink(self):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
 
         default = None
         if self._type:
@@ -1724,6 +1787,9 @@ class GremlinFSPath(GremlinFSBase):
 
     def readNode(self, size = 0, offset = 0):
 
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         default = None
         if self._type:
             default = None
@@ -1809,6 +1875,9 @@ class GremlinFSPath(GremlinFSBase):
         return default
 
     def writeNode(self, data, offset = 0):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
 
         default = data
         if self._type:
@@ -1948,6 +2017,9 @@ class GremlinFSPath(GremlinFSBase):
 
     def clearNode(self):
 
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         default = None
 
         # if self._path == "root":
@@ -2032,6 +2104,12 @@ class GremlinFSPath(GremlinFSBase):
         return default
 
     def moveNode(self, newmatch):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
+        # if newmatch.isFound():
+        #     raise GremlinFSExistsError(self)
 
         default = None
         if self._type:
@@ -2151,6 +2229,9 @@ class GremlinFSPath(GremlinFSBase):
 
     def deleteNode(self):
 
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         default = None
         if self._type:
             default = None
@@ -2231,6 +2312,9 @@ class GremlinFSPath(GremlinFSBase):
 
     def setProperty(self, key, value):
 
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
+
         if self._path == "atpath":
             node = self.node()
             if node:
@@ -2250,6 +2334,9 @@ class GremlinFSPath(GremlinFSBase):
         return True
 
     def getProperty(self, key, default = None):
+
+        if not self.isFound():
+            raise GremlinFSNotExistsError(self)
 
         if self._path == "atpath":
             node = self.node()
