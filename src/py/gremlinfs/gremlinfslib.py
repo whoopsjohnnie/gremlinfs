@@ -40,50 +40,14 @@ from gremlin_python.driver.driver_remote_connection import DriverRemoteConnectio
 import pika
 
 # 
+from .gremlinfslog import GremlinFSLogger
+from .gremlinfsobj import GremlinFSObj
+from .gremlinfsobj import gfslist
+from .gremlinfsobj import gfsmap
+
+# 
 # 
 import config
-
-
-
-# 
-logging.basicConfig(level=config.gremlinfs['log_level'])
-
-
-
-class GremlinFSLogger():
-
-    @classmethod
-    def getLogger(clazz, name):
-        return GremlinFSLogger(name)
-
-    @classmethod
-    def getLogLevel(clazz):
-        return None
-
-    def __init__(self, name, **kwargs):
-        self._name = name
-        self._logger = logging.getLogger(name)
-
-    def debug(self, *args, **kwargs):
-        self._logger.debug(*args, **kwargs)
-
-    def info(self, *args, **kwargs):
-        self._logger.info(*args, **kwargs)
-
-    def warning(self, *args, **kwargs):
-        self._logger.warning(*args, **kwargs)
-
-    def error(self, *args, **kwargs):
-        self._logger.error(*args, **kwargs)
-
-    def critical(self, *args, **kwargs):
-        self._logger.critical(*args, **kwargs)
-
-    def exception(self, *args, **kwargs):
-        self._logger.exception(*args, **kwargs)
-
-    def log(self, lvl, *args, **kwargs):
-        self._logger.log(lvl, *args, **kwargs)
 
 
 
@@ -122,55 +86,12 @@ class GremlinFSIsFolderError(GremlinFSError):
 
 
 
-class GremlinFSBase():
+class GremlinFSBase(GremlinFSObj):
 
     logger = GremlinFSLogger.getLogger("GremlinFSBase")
 
     def __init__(self, **kwargs):
         self.setall(kwargs)
-
-    def setall(self, _dict_ = {}, prefix = None):
-        for key in dict(_dict_):
-            value = _dict_[key] # .get(key, None)
-            self.set(key, value, prefix)
-
-    def getall(self, prefix = None):
-        props = {}
-        for prop, value in iteritems(vars(self)):
-            if prefix:
-                if prop and len(prop) > 0 and prop.startswith("_%s." % (prefix)):
-                    props[prop.replace("_%s." % (prefix), "", 1)] = value
-            else:
-                if prop and len(prop) > 1 and prop[0] == "_":
-                    props[prop[1:]] = value
-        return props
-
-    def all(self, prefix = None):
-        return self.getall(prefix)
-
-    def keys(self, prefix = None):
-        return self.getall(prefix).keys()
-
-    def has(self, key, prefix = None):
-        if prefix:
-            key = "%s.%s" % (prefix, key)
-        if hasattr(self, "_%s" % (key)):
-            return True
-        return False
-
-    def set(self, key, value, prefix = None):
-        if key != "__class__":
-            if prefix:
-                key = "%s.%s" % (prefix, key)
-            setattr(self, "_%s" % (key), value)
-
-    def get(self, key, default = None, prefix = None):
-        if not self.has(key, prefix = prefix):
-            return default
-        if prefix:
-            key = "%s.%s" % (prefix, key)
-        value = getattr(self, "_%s" % (key), default)
-        return value
 
     def property(self, name, default = None, prefix = None):
         return self.get(name, default, prefix = prefix)
