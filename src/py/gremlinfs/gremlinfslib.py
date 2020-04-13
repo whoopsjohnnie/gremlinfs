@@ -172,25 +172,18 @@ class GremlinFSPath(GremlinFSBase):
         }
 
     @classmethod
-    def expand(clazz, path):
-
-        groupIDs = (os.path.normpath(os.path.splitdrive(path)[1]))
-        if groupIDs == "/":
-            return None
-        else:
-            if not "/" in groupIDs:
-                return [groupIDs]
-            else:
-                groupIDs = groupIDs.split('/')
-
-                if groupIDs[0] == "" and len(groupIDs) > 1:
-                    return groupIDs[1:]
-                else:
-                    logging.error(' GremlinFS: Error parsing path [{}] '.format(path))
-                    raise ValueError(' GremlinFS: Error parsing path [{}] '.format(path))
+    def path(clazz, path):
+        paths = GremlinFSPath.paths()
+        if paths and path in paths:
+            return paths[path]
+        return None
 
     @classmethod
-    def path(clazz, path, node = None):
+    def expand(clazz, path):
+        return GremlinFS.operations().utils().splitpath(path)
+
+    @classmethod
+    def atpath(clazz, path, node = None):
 
         if not node:
             root = None
@@ -201,6 +194,9 @@ class GremlinFSPath(GremlinFSBase):
             node = root
 
         if not path:
+            return node
+
+        elif path and len(path) == 0:
             return node
 
         elif path and len(path) == 1 and path[0] == "":
@@ -215,7 +211,7 @@ class GremlinFSPath(GremlinFSBase):
         else:
             nodes = GremlinFSVertex.fromVs(
                 GremlinFS.operations().g().V().where(
-                    __.out(
+                    GremlinFS.operations().a().out(
                         GremlinFS.operations().config("in_label", "in")
                     ).count().is_(0)
                 )
@@ -224,7 +220,7 @@ class GremlinFSPath(GremlinFSBase):
         if nodes:
             for cnode in nodes:
                 if cnode.toid(True) == elem:
-                    return GremlinFSPath.path(path[1:], cnode)
+                    return GremlinFSPath.atpath(path[1:], cnode)
 
         return None
 
@@ -245,7 +241,7 @@ class GremlinFSPath(GremlinFSBase):
             node = GremlinFSVertex.load( nodeid )
 
         elif path:
-            node = GremlinFSPath.path( path )
+            node = GremlinFSPath.atpath( path )
 
         return node
 
@@ -270,10 +266,10 @@ class GremlinFSPath(GremlinFSBase):
 
         if vindex:
             if vindex > 0:
-                parent = GremlinFSPath.path( path[0:vindex] )
+                parent = GremlinFSPath.atpath( path[0:vindex] )
 
         else:
-            parent = GremlinFSPath.path( path )
+            parent = GremlinFSPath.atpath( path )
 
         return parent
 
@@ -286,6 +282,7 @@ class GremlinFSPath(GremlinFSBase):
             "full": None,
             "parent": None,
             "node": None,
+            "name": None,
 
             "vertexlabel": "vertex",
             "vertexid": None,
@@ -296,7 +293,9 @@ class GremlinFSPath(GremlinFSBase):
 
         }
 
-        match["full"] = clazz.expand(path)
+        match.update({
+            "full": GremlinFS.operations().utils().splitpath(path)
+        })
         expanded = match.get("full", [])
 
         if not expanded:
@@ -481,16 +480,42 @@ class GremlinFSPath(GremlinFSBase):
                 )
             })
 
-        if match and match["path"] in clazz.paths():
-            match.update(
-                clazz.paths()[match["path"]]
-            )
+        # if match and match.get("path") in GremlinFSPath.paths():
+        #     match.update(
+        #         GremlinFSPath.paths()[clazz.paths()[match.get("path")]]
+        #     )
 
-        if match and "debug" in match and match["debug"]:
-            logging.debug(' GremlinFSPath: MATCH: %s ' % (match.get("path")))
-            logging.debug( match )
+        match.update(
+            GremlinFSPath.path(match.get("path"))
+        )
 
-        return GremlinFSPath(**match)
+        debug = False
+        if match and match.get("debug", False):
+            debug = True
+
+        # if debug:
+        #     clazz.logger.debug(' GremlinFSPath: MATCH: ' + match.get("path"))
+        #     clazz.logger.debug( match )
+
+        return GremlinFSPath(
+
+            type = match.get("type"),
+            debug = debug, # match.get("debug"),
+
+            path = match.get("path"),
+            full = match.get("full"),
+            parent = match.get("parent"),
+            node = match.get("node"),
+            name = match.get("name"),
+
+            vertexlabel = match.get("vertexlabel"),
+            vertexid = match.get("vertexid"),
+            vertexuuid = match.get("vertexuuid"),
+            vertexname = match.get("vertexname"),
+            vertexproperty = match.get("vertexproperty"),
+            vertexedge = match.get("vertexedge")
+
+        )
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -503,6 +528,9 @@ class GremlinFSPath(GremlinFSBase):
 
     def ro(self):
         return GremlinFS.operations().ro()
+
+    def a(self):
+        return GremlinFS.operations().a()
 
     def mq(self):
         return GremlinFS.operations().mq()
@@ -520,7 +548,7 @@ class GremlinFSPath(GremlinFSBase):
         return GremlinFS.operations().config(key, default)
 
     def utils(self):
-        return GremlinFSUtils.utils()
+        return GremlinFS.operations().utils()
 
     # 
 
@@ -978,7 +1006,7 @@ class GremlinFSPath(GremlinFSBase):
             else:
                 nodes = GremlinFSVertex.fromVs(
                     self.g().V().where(
-                        __.out(
+                        GremlinFS.operations().a().out(
                             self.config("in_label")
                         ).count().is_(0)
                     )
@@ -1725,7 +1753,7 @@ class GremlinFSPath(GremlinFSBase):
             data = node.render()
 
             if data:
-                data = tobytes(data)
+                data = self.utils().tobytes(data)
 
             if data and size > 0 and offset > 0:
                 return data[offset:offset + size]
@@ -1761,7 +1789,7 @@ class GremlinFSPath(GremlinFSBase):
                 ""
             )
 
-            data = tobytes(data)
+            data = self.utils().tobytes(data)
 
             if size > 0 and offset > 0:
                 return data[offset:offset + size]
@@ -1821,11 +1849,11 @@ class GremlinFSPath(GremlinFSBase):
                 encoding = "base64"
             )
 
-            old = tobytes(old)
+            old = self.utils().tobytes(old)
 
             new = GremlinFSUtils.irepl(old, data, offset)
 
-            new = tostring(new)
+            new = self.utils().tostring(new)
 
             node.writeProperty(
                 self.config("data_property"),
@@ -1891,11 +1919,11 @@ class GremlinFSPath(GremlinFSBase):
                 None
             )
 
-            old = tobytes(old)
+            old = self.utils().tobytes(old)
 
             new = GremlinFSUtils.irepl(old, data, offset)
 
-            new = tostring(new)
+            new = self.utils().tostring(new)
 
             node.writeProperty(
                 self._vertexproperty,
@@ -2298,7 +2326,7 @@ class GremlinFSNode(GremlinFSBase):
                 if "compiled" in label_config:
                     compiled = label_config["compiled"]
                 else:
-                    compiled = re.compile(label_config["pattern"])
+                    compiled = GremlinFS.operations().utils().recompile(label_config["pattern"])
 
                 if compiled:
                     if compiled.search(name):
@@ -2352,6 +2380,9 @@ class GremlinFSNode(GremlinFSBase):
     def ro(self):
         return GremlinFS.operations().ro()
 
+    def a(self):
+        return GremlinFS.operations().a()
+
     def mq(self):
         return GremlinFS.operations().mq()
 
@@ -2368,7 +2399,7 @@ class GremlinFSNode(GremlinFSBase):
         return GremlinFS.operations().config(key, default)
 
     def utils(self):
-        return GremlinFSUtils.utils()
+        return GremlinFS.operations().utils()
 
     def labelConfig(self):
         node = self
@@ -2448,10 +2479,9 @@ class GremlinFSNode(GremlinFSBase):
             return default
 
         if encoding:
-            import base64
-            data = tobytes(data)
-            data = base64.b64decode(data)
-            data = tostring(data)
+            data = self.utils().tobytes(data)
+            data = self.utils().decode(data, encoding)
+            data = self.utils().tostring(data)
 
         return data
 
@@ -2468,10 +2498,9 @@ class GremlinFSNode(GremlinFSBase):
         nodeid = node.get("id")
 
         if encoding:
-            import base64
-            data = tobytes(data)
-            data = base64.b64encode(data)
-            data = tostring(data)
+            data = self.utils().tobytes(data)
+            data = self.utils().encode(data, encoding)
+            data = self.utils().tostring(data)
 
         node.set(name, data, prefix = prefix)
 
@@ -2813,7 +2842,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         # name.type@label@uuid
         # ^(.+)\.(.+)\@(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$
-        matcher = re.match(
+        matcher = GremlinFS.operations().utils().rematch(
             r"^(.+)\.(.+)\@(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$",
             id
         )
@@ -2831,7 +2860,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         # name@label@uuid
         # ^(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$
-        matcher = re.match(
+        matcher = GremlinFS.operations().utils().rematch(
             r"^(.+)\@(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$",
             id
         )
@@ -2847,7 +2876,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         # name.type@uuid
         # ^(.+)\.(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$
-        matcher = re.match(
+        matcher = GremlinFS.operations().utils().rematch(
             r"^(.+)\.(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$",
             id
         )
@@ -2863,7 +2892,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         # name@uuid
         # ^(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$
-        matcher = re.match(
+        matcher = GremlinFS.operations().utils().rematch(
             r"^(.+)\@([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$",
             id
         )
@@ -2877,7 +2906,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         # name.type
         # ^(.+)\.(.+)$
-        matcher = re.match(
+        matcher = GremlinFS.operations().utils().rematch(
             r"^(.+)\.(.+)$",
             id
         )
@@ -2891,7 +2920,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         # uuid
         # ([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})
-        matcher = re.match(
+        matcher = GremlinFS.operations().utils().rematch(
             r"^([0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$",
             id
         )
@@ -3499,13 +3528,8 @@ class GremlinFSVertex(GremlinFSNode):
 
         try:
 
-            pathuuid = None
-            if UUID:
-                pathuuid = uuid.UUID(UUID)
-            else:
-                pathuuid = uuid.uuid1()
-
-            pathtime = time()
+            pathuuid = self.utils().genuuid(UUID)
+            pathtime = self.utils().gentime()
 
             # txn = self.graph().tx()
 
@@ -3541,10 +3565,12 @@ class GremlinFSVertex(GremlinFSNode):
                 ).property(
                     'name', self.config("in_name")
                 ).property(
-                    'uuid', str(uuid.uuid1())
-                ).to(__.V(
-                    parent.get("id")
-                )).next()
+                    'uuid', str(self.utils().genuuid())
+                ).to(
+                    GremlinFS.operations().a().V(
+                        parent.get("id")
+                    )
+                ).next()
             else:
                 newnode.next()
 
@@ -3652,10 +3678,12 @@ class GremlinFSVertex(GremlinFSNode):
                     ).property(
                         'name', self.config("in_name")
                     ).property(
-                        'uuid', str(uuid.uuid1())
-                    ).to(__.V(
-                        parent.get("id")
-                    ))
+                        'uuid', str(self.utils().genuuid())
+                    ).to(
+                        GremlinFS.operations().a().V(
+                            parent.get("id")
+                        )
+                    )
                 )
 
             except Exception as e:
@@ -3741,15 +3769,11 @@ class GremlinFSVertex(GremlinFSNode):
         except Exception as e:
             self.logger.exception(' GremlinFS: readNode template exception ', e)
 
-
         try:
 
             if template:
 
-                import pystache
-                renderer = pystache.Renderer()
-
-                data = pystache.render(
+                data = render(
                     template, {
                         "self": GremlinFSNodeWrapper(
                             node = node
@@ -3828,10 +3852,12 @@ class GremlinFSVertex(GremlinFSNode):
                 ).property(
                     'name', self.config("self_name")
                 ).property(
-                    'uuid', str(uuid.uuid1())
-                ).to(__.V(
-                    newfolder.get("id")
-                ))
+                    'uuid', str(self.utils().genuuid())
+                ).to(
+                    GremlinFS.operations().a().V(
+                        newfolder.get("id")
+                    )
+                )
             )
 
             # self.graph().tx().commit()
@@ -3881,10 +3907,12 @@ class GremlinFSVertex(GremlinFSNode):
                     ).property(
                         'name', name
                     ).property(
-                        'uuid', str(uuid.uuid1())
-                    ).to(__.V(
-                        target.get("id")
-                    ))
+                        'uuid', str(self.utils().genuuid())
+                    ).to(
+                        GremlinFS.operations().a().V(
+                            target.get("id")
+                        )
+                    )
                 )
 
             else:
@@ -3895,10 +3923,12 @@ class GremlinFSVertex(GremlinFSNode):
                     ).addE(
                         label
                     ).property(
-                        'uuid', str(uuid.uuid1())
-                    ).to(__.V(
-                        target.get("id")
-                    ))
+                        'uuid', str(self.utils().genuuid())
+                    ).to(
+                        GremlinFS.operations().a().V(
+                            target.get("id")
+                        )
+                    )
                 )
 
         except Exception as e:
@@ -4013,7 +4043,7 @@ class GremlinFSVertex(GremlinFSNode):
         if not node:
             return GremlinFSVertex.fromMaps(
                 self.g().V().where(
-                    __.out(
+                    GremlinFS.operations().a().out(
                         self.config("in_label")
                     ).count().is_(0)
                 ).valueMap(True).toList()
@@ -4047,7 +4077,7 @@ class GremlinFSEdge(GremlinFSNode):
 
         # name@label
         # ^(.+)\@(.+)$
-        matcher = re.match(
+        matcher = GremlinFS.operations().utils().rematch(
             r"^(.+)\@(.+)$",
             id
         )
@@ -4132,7 +4162,7 @@ class GremlinFSNodeWrapper(GremlinFSBase):
             if attr == "content" or attr == "contents":
                 data = node.render()
                 # if data:
-                #     data = tobytes(data)
+                #     data = self.utils().tobytes(data)
 
             if data:
                 return data
@@ -4354,6 +4384,9 @@ class GremlinFSUtils(GremlinFSBase):
     def ro(self):
         return GremlinFS.operations().ro()
 
+    def a(self):
+        return GremlinFS.operations().a()
+
     def mq(self):
         return GremlinFS.operations().mq()
 
@@ -4370,7 +4403,7 @@ class GremlinFSUtils(GremlinFSBase):
         return GremlinFS.operations().config(key, default)
 
     # def utils(self):
-    #     return GremlinFSUtils.utils()
+    #     return GremlinFS.operations().utils()
 
     # 
 
@@ -4396,6 +4429,93 @@ class GremlinFSUtils(GremlinFSBase):
             return None
 
         return "%s%s" % (self.config("mount_point"), path)
+
+    # 
+
+    def tobytes(self, data):
+
+        if data:
+
+            # ensure that we have a string
+            try:
+
+                data = str(data)
+
+            except:
+                pass
+
+            try:
+
+                # convert to byte
+                data = data.encode(
+                    encoding='utf-8', 
+                    errors='strict'
+                )
+
+                return data
+
+            except:
+                return data
+
+        return data
+
+    def tostring(self, data):
+
+        if data:
+
+            try:
+
+                # convert to string
+                data = data.decode(
+                    encoding='utf-8', 
+                    errors='strict'
+                    )
+
+                return data
+
+            except:
+                return data
+
+        return data
+
+    def decode(self, data, encoding = "base64"):
+        import base64
+        data = base64.b64decode(data)
+        return data
+
+    def encode(self, data, encoding = "base64"):
+        import base64
+        data = base64.b64encode(data)
+        return data
+
+    def splitpath(self, path):
+        if path == "/":
+            return None
+        elif not "/" in path:
+            return [path]
+        elems = path.split("/")
+        if elems[0] == "" and len(elems) > 1:
+            return elems[1:]
+        return elems
+
+    def rematch(self, pattern, data):
+        import re
+        return re.match(pattern, data)
+
+    def recompile(self, pattern):
+        import re
+        return re.compile(pattern)
+
+    def genuuid(self, UUID = None):
+        import uuid
+        if UUID:
+            return uuid.UUID(UUID)
+        else:
+            return uuid.uuid1()
+
+    def gentime(self):
+        from time import time
+        return time()
 
 
 
@@ -4582,6 +4702,8 @@ class GremlinFS():
 
         )
 
+        self._utils = GremlinFSUtils()
+
         return self
 
     def connection(self, ro = False):
@@ -4654,6 +4776,9 @@ class GremlinFS():
         self._ro = ro
 
         return self._ro
+
+    def a(self):
+        return __
 
     def mq(self):
 
