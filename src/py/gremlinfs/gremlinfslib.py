@@ -3504,7 +3504,7 @@ class GremlinFSVertex(GremlinFSNode):
             raise GremlinFSNotExistsError(self)
         return node
 
-    def create(self, parent = None, mode = None, owner = None, group = None):
+    def create(self, parent = None, mode = None, owner = None, group = None, namespace = None):
 
         node = self
 
@@ -3523,6 +3523,9 @@ class GremlinFSVertex(GremlinFSNode):
 
         if not group:
             group = GremlinFS.operations().config("default_gid", 0)
+
+        if not namespace:
+            namespace = GremlinFS.operations().config("fs_ns")
 
         newnode = None
 
@@ -3546,7 +3549,7 @@ class GremlinFSVertex(GremlinFSNode):
             ).property(
                 'uuid', str(pathuuid)
             ).property(
-                'filesystem', self.config("fs_id")
+                'namespace', namespace
             ).property(
                 'created', int(pathtime)
             ).property(
@@ -3607,8 +3610,6 @@ class GremlinFSVertex(GremlinFSNode):
                 newnode = GremlinFSVertex.fromV(
                     self.g().V(
                         node.get("id")
-                    ).has(
-                        'filesystem', self.config("fs_id")
                     ).property(
                         'name', name
                     )
@@ -3623,8 +3624,6 @@ class GremlinFSVertex(GremlinFSNode):
             newnode = GremlinFSVertex.fromV(
                 self.g().V(
                     node.get("id")
-                ).has(
-                    'filesystem', self.config("fs_id")
                 )
             )
 
@@ -3652,8 +3651,6 @@ class GremlinFSVertex(GremlinFSNode):
             newnode = GremlinFSVertex.fromV(
                 self.g().V(
                     node.get("id")
-                ).has(
-                    'filesystem', self.config("fs_id")
                 ).outE(
                     self.config("in_label")
                 ).has(
@@ -3671,8 +3668,6 @@ class GremlinFSVertex(GremlinFSNode):
                 newnode = GremlinFSVertex.fromV(
                     self.g().V(
                         node.get("id")
-                    ).has(
-                        'filesystem', self.config("fs_id")
                     ).addE(
                         self.config("in_label")
                     ).property(
@@ -3695,8 +3690,6 @@ class GremlinFSVertex(GremlinFSNode):
             newnode = GremlinFSVertex.fromV(
                 self.g().V(
                     node.get("id")
-                ).has(
-                    'filesystem', self.config("fs_id")
                 )
             )
 
@@ -3717,8 +3710,6 @@ class GremlinFSVertex(GremlinFSNode):
 
             self.g().V(
                 node.get("id")
-            ).has(
-                'filesystem', self.config("fs_id")
             ).drop().next()
 
         except Exception as e:
@@ -3796,7 +3787,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         return data
 
-    def createFolder(self, parent = None, mode = None, owner = None, group = None):
+    def createFolder(self, parent = None, mode = None, owner = None, group = None, namespace = None):
 
         node = self
 
@@ -3819,7 +3810,10 @@ class GremlinFSVertex(GremlinFSNode):
         if not group:
             group = GremlinFS.operations().config("default_gid", 0)
 
-        newfolder = self.create(parent = parent, mode = mode, owner = owner, group = group)
+        if not namespace:
+            namespace = GremlinFS.operations().config("fs_ns")
+
+        newfolder = self.create(parent = parent, mode = mode, owner = owner, group = group, namespace = namespace)
 
         try:
 
@@ -3868,8 +3862,8 @@ class GremlinFSVertex(GremlinFSNode):
 
         return newfolder
 
-    def createFile(self, parent = None, mode = None, owner = None, group = None):
-        return self.create(parent = parent, mode = mode, owner = owner, group = group)
+    def createFile(self, parent = None, mode = None, owner = None, group = None, namespace = None):
+        return self.create(parent = parent, mode = mode, owner = owner, group = group, namespace)
 
     def createLink(self, target, label, name = None, mode = None, owner = None, group = None):
 
@@ -4552,7 +4546,7 @@ class GremlinFSConfig(GremlinFSBase):
 
             "log_level": GremlinFSLogger.getLogLevel(),
 
-            "fs_id": "gfs1",
+            "fs_ns": "gfs1",
             "fs_root": None,
             "fs_root_init": False,
 

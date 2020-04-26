@@ -76,7 +76,7 @@ gremlinfs = dict(
 
     mq_exchange = 'gfs-exchange',
 
-    fs_id = "gfs1",
+    fs_ns = "gfs1",
     fs_root = None,
     fs_root_init = False,
 
