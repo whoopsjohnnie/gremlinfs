@@ -413,6 +413,11 @@ class GremlinFSPath(GremlinFSBase):
 
         }
 
+        # Remove mount point from path if present. Symlinks often give the full path
+        # including mount point
+        if( (path) and (path.startswith( GremlinFS.operations().mount_point )) ):
+            path = path[len(GremlinFS.operations().mount_point):]
+
         match["full"] = clazz.expand(path)
         expanded = match.get("full", [])
 
@@ -4577,19 +4582,28 @@ class GremlinFSUtils(GremlinFSBase):
 
     def nodelink(self, node, path = None):
 
-        newpath = None
+#         newpath = None
+# 
+#         if node and path:
+#             newpath = self.linkpath("%s/.V/%s" % (
+#                 path,
+#                 node.toid()
+#             ))
+#         elif node:
+#             newpath = self.linkpath("/.V/%s" % (
+#                 node.toid()
+#             ))
 
-        if node and path:
-            newpath = self.linkpath("%s/.V/%s" % (
-                path,
-                node.toid()
-            ))
-        elif node:
-            newpath = self.linkpath("/.V/%s" % (
-                node.toid()
-            ))
+        nodepath = ""
 
-        return newpath
+        if node:
+            path = node.path()
+            if path:
+                for node in path:
+                    nodename = node.get("name", None)
+                    nodepath += "/" + nodename
+
+        return self.linkpath("%s" % (nodepath))
 
     def linkpath(self, path):
 
