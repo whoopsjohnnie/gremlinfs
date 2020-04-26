@@ -1307,7 +1307,7 @@ class GremlinFSPath(GremlinFSBase):
                 name = newname,
                 label = newlabel,
                 uuid = newuuid
-            ).createFile(
+            ).create(
                 parent = parent,
                 mode = mode
             )
@@ -3893,9 +3893,6 @@ class GremlinFSVertex(GremlinFSNode):
             return None
 
         return newfolder
-
-    def createFile(self, parent = None, mode = None, owner = None, group = None):
-        return self.create(parent = parent, mode = mode, owner = owner, group = group)
 
     def createLink(self, target, label, name = None, mode = None, owner = None, group = None):
 
