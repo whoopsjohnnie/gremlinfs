@@ -3957,6 +3957,67 @@ class GremlinFSVertex(GremlinFSNode):
 
         return newnode
 
+    def getLink(self, label, name = None, ine = True):
+
+        node = self
+
+        if not node:
+            return None
+
+        if not label:
+            return None
+
+        try:
+
+            if name:
+
+                if ine:
+                    return GremlinFSEdge.fromE(
+                        self.g().V(
+                            node.get("id")
+                        ).inE(
+                            label
+                        ).has(
+                            'name', name
+                        )
+                    )
+
+                else:
+                    return GremlinFSEdge.fromE(
+                        self.g().V(
+                            node.get("id")
+                        ).outE(
+                            label
+                        ).has(
+                            'name', name
+                        )
+                    )
+
+            else:
+
+                if ine:
+                    return GremlinFSEdge.fromE(
+                        self.g().V(
+                            node.get("id")
+                        ).inE(
+                            label
+                        )
+                    )
+
+                else:
+                    return GremlinFSEdge.fromE(
+                        self.g().V(
+                            node.get("id")
+                        ).outE(
+                            label
+                        )
+                    )
+
+        except:
+            pass
+
+        return None
+
     def deleteLink(self, label, name = None, ine = True):
 
         node = self
