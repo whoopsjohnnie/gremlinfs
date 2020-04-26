@@ -74,11 +74,11 @@ def amqp_rcve(operations = None):
             mqchannel = mqconnection.channel()
 
             mqchannel.queue_declare(
-                queue = operations.config("fs_id")
+                queue = operations.config("fs_ns")
             )
 
             mqchannel.basic_consume(
-                queue = operations.config("fs_id"),
+                queue = operations.config("fs_ns"),
                 auto_ack = True,
                 on_message_callback = operations.mqonmessage
             )
@@ -3565,7 +3565,7 @@ class GremlinFSVertex(GremlinFSNode):
             ).property(
                 'uuid', str(pathuuid)
             ).property(
-                'filesystem', self.config("fs_id")
+                'namespace', self.config("fs_ns")
             ).property(
                 'created', int(pathtime)
             ).property(
@@ -3626,7 +3626,7 @@ class GremlinFSVertex(GremlinFSNode):
                     self.g().V(
                         node.get("id")
                     ).has(
-                        'filesystem', self.config("fs_id")
+                        'namespace', self.config("fs_ns")
                     ).property(
                         'name', name
                     )
@@ -3643,7 +3643,7 @@ class GremlinFSVertex(GremlinFSNode):
                 self.g().V(
                     node.get("id")
                 ).has(
-                    'filesystem', self.config("fs_id")
+                    'namespace', self.config("fs_ns")
                 )
             )
 
@@ -3673,7 +3673,7 @@ class GremlinFSVertex(GremlinFSNode):
                 self.g().V(
                     node.get("id")
                 ).has(
-                    'filesystem', self.config("fs_id")
+                    'namespace', self.config("fs_ns")
                 ).outE(
                     self.config("in_label")
                 ).has(
@@ -3692,7 +3692,7 @@ class GremlinFSVertex(GremlinFSNode):
                     self.g().V(
                         node.get("id")
                     ).has(
-                        'filesystem', self.config("fs_id")
+                        'namespace', self.config("fs_ns")
                     ).addE(
                         self.config("in_label")
                     ).property(
@@ -3715,7 +3715,7 @@ class GremlinFSVertex(GremlinFSNode):
                 self.g().V(
                     node.get("id")
                 ).has(
-                    'filesystem', self.config("fs_id")
+                    'namespace', self.config("fs_ns")
                 )
             )
 
@@ -3738,7 +3738,7 @@ class GremlinFSVertex(GremlinFSNode):
             self.g().V(
                 node.get("id")
             ).has(
-                'filesystem', self.config("fs_id")
+                'namespace', self.config("fs_ns")
             ).drop().next()
 
         except:
@@ -4742,7 +4742,7 @@ class GremlinFSOperations(Operations):
 
             self.mq().basic_publish(
                 exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_id"),
+                routing_key = self.config("fs_ns"),
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -4758,7 +4758,7 @@ class GremlinFSOperations(Operations):
 
             self.mq().basic_publish(
                 exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_id"),
+                routing_key = self.config("fs_ns"),
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -4780,7 +4780,7 @@ class GremlinFSOperations(Operations):
 
             self.mq().basic_publish(
                 exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_id"),
+                routing_key = self.config("fs_ns"),
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -4870,7 +4870,7 @@ class GremlinFSOperations(Operations):
 
             "log_level": GremlinFSUtils.conf('log_level', logging.DEBUG),
 
-            "fs_id": GremlinFSUtils.conf('fs_id', "gfs1"),
+            "fs_ns": GremlinFSUtils.conf('fs_ns', "gfs1"),
             "fs_root": self.getfs(
                 GremlinFSUtils.conf('fs_root', None),
                 GremlinFSUtils.conf('fs_root_init', False)
