@@ -30,7 +30,7 @@ except ImportError:
 # 3.3.0
 # http://tinkerpop.apache.org/docs/3.3.0-SNAPSHOT/reference/#gremlin-python
 from gremlin_python import statics
-from gremlin_python.structure.graph import Graph
+from gremlin_python.structure.graph import Graph, Vertex, Edge
 from gremlin_python.process.graph_traversal import __
 from gremlin_python.process.strategies import *
 from gremlin_python.process.traversal import T, P, Operator
@@ -3761,9 +3761,56 @@ class GremlinFSVertex(GremlinFSNode):
 
         try:
 
+            ps = GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
+                GremlinFS.operations().a().outE().inV()
+            ).until(
+                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+            ).path().toList()
+
+            vs = GremlinFSVertex.fromVs(GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
+                GremlinFS.operations().a().outE().inV()
+            ).until(
+                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+            ))
+
+            vs2 = {}
+            for v in vs:
+                vs2[v.get('id')] = v
+
+            templatectx = vs2[ node.get('id') ].all()
+            templatectxi = templatectx
+
+            for v in ps:
+                templatectxi = templatectx
+                haslabel = False
+                for v2 in v.objects:
+                    v2id = (v2.id)['@value']
+                    if isinstance(v2, Vertex):
+                        if haslabel:
+                            found = None
+                            for ctemplatectxi in templatectxi:
+                                if ctemplatectxi.get('id') == v2id:
+                                    found = ctemplatectxi
+
+                            if found:
+                                templatectxi = found
+
+                            else:
+                                list(templatectxi).append(vs2[v2id].all())
+                                templatectxi = templatectxi[-1]
+
+                    elif isinstance(v2, Edge):
+                        haslabel = True
+                        if v2.label in templatectxi:
+                            pass
+                        else:
+                            templatectxi[v2.label] = []
+
+                        templatectxi = templatectxi[v2.label]
+
             if template:
 
-                data = render(
+                data = self.utils().render(
                     template, {
                         "self": GremlinFSNodeWrapper(
                             node = node
@@ -4653,6 +4700,9 @@ class GremlinFSUtils(GremlinFSBase):
         import base64
         data = base64.b64encode(data)
         return data
+
+    def render(self, template, templatectx):
+        pass
 
     def splitpath(self, path):
         if path == "/":
