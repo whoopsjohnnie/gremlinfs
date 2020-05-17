@@ -30,7 +30,7 @@ except ImportError:
 # 3.3.0
 # http://tinkerpop.apache.org/docs/3.3.0-SNAPSHOT/reference/#gremlin-python
 from gremlin_python import statics
-from gremlin_python.structure.graph import Graph
+from gremlin_python.structure.graph import Graph, Vertex, Edge
 from gremlin_python.process.graph_traversal import __
 from gremlin_python.process.strategies import *
 from gremlin_python.process.traversal import T, P, Operator
@@ -1241,7 +1241,7 @@ class GremlinFSPath(GremlinFSBase):
                 name = newname,
                 label = newlabel,
                 uuid = newuuid
-            ).createFile(
+            ).create(
                 parent = parent,
                 mode = mode
             )
@@ -3017,10 +3017,9 @@ class GremlinFSVertex(GremlinFSNode):
 
     @classmethod
     def fromV(clazz, v):
-        node = GremlinFSVertex.fromMap(
+        return GremlinFSVertex.fromMap(
             v.valueMap(True).next()
         )
-        return node
 
     @classmethod
     def fromVs(clazz, vs):
@@ -3762,9 +3761,56 @@ class GremlinFSVertex(GremlinFSNode):
 
         try:
 
+            ps = GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
+                GremlinFS.operations().a().outE().inV()
+            ).until(
+                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+            ).path().toList()
+
+            vs = GremlinFSVertex.fromVs(GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
+                GremlinFS.operations().a().outE().inV()
+            ).until(
+                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+            ))
+
+            vs2 = {}
+            for v in vs:
+                vs2[v.get('id')] = v
+
+            templatectx = vs2[ node.get('id') ].all()
+            templatectxi = templatectx
+
+            for v in ps:
+                templatectxi = templatectx
+                haslabel = False
+                for v2 in v.objects:
+                    v2id = (v2.id)['@value']
+                    if isinstance(v2, Vertex):
+                        if haslabel:
+                            found = None
+                            for ctemplatectxi in templatectxi:
+                                if ctemplatectxi.get('id') == v2id:
+                                    found = ctemplatectxi
+
+                            if found:
+                                templatectxi = found
+
+                            else:
+                                list(templatectxi).append(vs2[v2id].all())
+                                templatectxi = templatectxi[-1]
+
+                    elif isinstance(v2, Edge):
+                        haslabel = True
+                        if v2.label in templatectxi:
+                            pass
+                        else:
+                            templatectxi[v2.label] = []
+
+                        templatectxi = templatectxi[v2.label]
+
             if template:
 
-                data = render(
+                data = self.utils().render(
                     template, {
                         "self": GremlinFSNodeWrapper(
                             node = node
@@ -3862,9 +3908,6 @@ class GremlinFSVertex(GremlinFSNode):
 
         return newfolder
 
-    def createFile(self, parent = None, mode = None, owner = None, group = None, namespace = None):
-        return self.create(parent = parent, mode = mode, owner = owner, group = group, namespace)
-
     def createLink(self, target, label, name = None, mode = None, owner = None, group = None):
 
         source = self
@@ -3887,13 +3930,13 @@ class GremlinFSVertex(GremlinFSNode):
         if not group:
             group = GremlinFS.operations().config("default_gid", 0)
 
-        newnode = None
+        newedge = None
 
         try:
 
             if name:
 
-                newnode = GremlinFSVertex.fromV(
+                newedge = GremlinFSEdge.fromE(
                     self.g().V(
                         source.get("id")
                     ).addE(
@@ -3911,7 +3954,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             else:
 
-                newnode = GremlinFSVertex.fromV(
+                newedge = GremlinFSEdge.fromE(
                     self.g().V(
                         source.get("id")
                     ).addE(
@@ -3929,7 +3972,68 @@ class GremlinFSVertex(GremlinFSNode):
             self.logger.exception(' GremlinFS: createLink exception ', e)
             return None
 
-        return newnode
+        return newedge
+
+    def getLink(self, label, name = None, ine = True):
+
+        node = self
+
+        if not node:
+            return None
+
+        if not label:
+            return None
+
+        try:
+
+            if name:
+
+                if ine:
+                    return GremlinFSEdge.fromE(
+                        self.g().V(
+                            node.get("id")
+                        ).inE(
+                            label
+                        ).has(
+                            'name', name
+                        )
+                    )
+
+                else:
+                    return GremlinFSEdge.fromE(
+                        self.g().V(
+                            node.get("id")
+                        ).outE(
+                            label
+                        ).has(
+                            'name', name
+                        )
+                    )
+
+            else:
+
+                if ine:
+                    return GremlinFSEdge.fromE(
+                        self.g().V(
+                            node.get("id")
+                        ).inE(
+                            label
+                        )
+                    )
+
+                else:
+                    return GremlinFSEdge.fromE(
+                        self.g().V(
+                            node.get("id")
+                        ).outE(
+                            label
+                        )
+                    )
+
+        except:
+            pass
+
+        return None
 
     def deleteLink(self, label, name = None, ine = True):
 
@@ -3941,7 +4045,7 @@ class GremlinFSVertex(GremlinFSNode):
         if not label:
             return None
 
-        newnode = None
+        newedge = None
 
         # drop() on edges often/always? throw exceptions?
         try:
@@ -3949,7 +4053,7 @@ class GremlinFSVertex(GremlinFSNode):
             if name:
 
                 if ine:
-                    newnode = GremlinFSVertex.fromV(
+                    newedge = GremlinFSEdge.fromE(
                         self.g().V(
                             node.get("id")
                         ).inE(
@@ -3960,7 +4064,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    newnode = GremlinFSVertex.fromV(
+                    newedge = GremlinFSEdge.fromE(
                         self.g().V(
                             node.get("id")
                         ).outE(
@@ -3973,7 +4077,7 @@ class GremlinFSVertex(GremlinFSNode):
             else:
 
                 if ine:
-                    newnode = GremlinFSVertex.fromV(
+                    newedge = GremlinFSEdge.fromE(
                         self.g().V(
                             node.get("id")
                         ).inE(
@@ -3982,7 +4086,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    newnode = GremlinFSVertex.fromV(
+                    newedge = GremlinFSEdge.fromE(
                         self.g().V(
                             node.get("id")
                         ).outE(
@@ -4094,7 +4198,94 @@ class GremlinFSEdge(GremlinFSNode):
 
     @classmethod
     def load(clazz, id):
+
+        parts = GremlinFSEdge.parse(id)
+        if parts and \
+            "uuid" in parts and \
+            "name" in parts and \
+            "label" in parts:
+            try:
+                if parts["label"] == "vertex":
+                    return GremlinFSEdge.fromE(
+                        GremlinFS.operations().g().E().has(
+                            "uuid", parts["uuid"]
+                        )
+                    )
+                else:
+                    return GremlinFSEdge.fromE(
+                        GremlinFS.operations().g().E().hasLabel(
+                            parts["label"]
+                        ).has(
+                            "uuid", parts["uuid"]
+                        )
+                    )
+            except Exception as e:
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
+                return None
+
+        elif parts and \
+            "uuid" in parts and \
+            "label" in parts:
+            try:
+                if parts["label"] == "vertex":
+                    return GremlinFSEdge.fromE(
+                        GremlinFS.operations().g().E().has(
+                            "uuid", parts["uuid"]
+                        )
+                    )
+                else:
+                    return GremlinFSEdge.fromE(
+                        GremlinFS.operations().g().E().hasLabel(
+                            parts["label"]
+                        ).has(
+                            "uuid", parts["uuid"]
+                        )
+                    )
+            except Exception as e:
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
+                return None
+
+        elif parts and \
+            "uuid" in parts:
+            try:
+                return GremlinFSEdge.fromE(
+                    GremlinFS.operations().g().E().has(
+                        "uuid", parts["uuid"]
+                    )
+                )
+            except Exception as e:
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
+                return None
+
+        # Fallback try as straigt up DB id
+        # OrientDB doesn't like invalid ID queries?
+        elif id and ":" in id:
+            try:
+                return GremlinFSEdge.fromE(
+                    GremlinFS.operations().g().E(
+                        id
+                    )
+                )
+            except Exception as e:
+                # self.logger.exception(' GremlinFS: edge from path ID exception ', e)
+                return None
+
         return None
+
+    @classmethod
+    def fromMap(clazz, map):
+        node = GremlinFSEdge()
+        node.fromobj(map)
+        return node
+
+    @classmethod
+    def fromMaps(clazz, maps):
+        nodes = gfslist([])
+        for map in maps:
+            node = GremlinFSEdge()
+            node.fromobj(map)
+            nodes.append(node)
+        return nodes.tolist()
 
     @classmethod
     def fromE(clazz, e):
@@ -4133,6 +4324,25 @@ class GremlinFSEdge(GremlinFSNode):
             except Exception as e:
                 # self.logger.exception(' GremlinFS: node exception ', e)
                 return None
+
+    def delete(self):
+
+        node = self
+
+        if not node:
+            return None
+
+        try:
+
+            self.g().E(
+                node.get("id")
+            ).drop().next()
+
+        except Exception as e:
+            # self.logger.exception(' GremlinFS: delete exception ', e)
+            return False
+
+        return True
 
 
 
@@ -4403,19 +4613,28 @@ class GremlinFSUtils(GremlinFSBase):
 
     def nodelink(self, node, path = None):
 
-        newpath = None
+#         newpath = None
+# 
+#         if node and path:
+#             newpath = self.linkpath("%s/.V/%s" % (
+#                 path,
+#                 node.toid()
+#             ))
+#         elif node:
+#             newpath = self.linkpath("/.V/%s" % (
+#                 node.toid()
+#             ))
 
-        if node and path:
-            newpath = self.linkpath("%s/.V/%s" % (
-                path,
-                node.toid()
-            ))
-        elif node:
-            newpath = self.linkpath("/.V/%s" % (
-                node.toid()
-            ))
+        nodepath = ""
 
-        return newpath
+        if node:
+            path = node.path()
+            if path:
+                for node in path:
+                    nodename = node.get("name", None)
+                    nodepath += "/" + nodename
+
+        return self.linkpath("%s" % (nodepath))
 
     def linkpath(self, path):
 
@@ -4481,6 +4700,9 @@ class GremlinFSUtils(GremlinFSBase):
         import base64
         data = base64.b64encode(data)
         return data
+
+    def render(self, template, templatectx):
+        pass
 
     def splitpath(self, path):
         if path == "/":
