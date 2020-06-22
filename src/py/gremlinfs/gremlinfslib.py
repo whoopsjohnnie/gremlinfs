@@ -3518,15 +3518,15 @@ class GremlinFSVertex(GremlinFSNode):
         try:
 
             ps = GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
-                GremlinFS.operations().a().outE().inV()
+                GremlinFS.operations().a().inE().outV()
             ).until(
-                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(p.gt(10))
+                GremlinFS.operations().a().inE().count().is_(0).or_().loops().is_(P.gt(10))
             ).path().toList()
 
             vs = GremlinFSVertex.fromVs(GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
-                GremlinFS.operations().a().outE().inV()
+                GremlinFS.operations().a().inE().outV()
             ).until(
-                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(p.gt(10))
+                GremlinFS.operations().a().inE().count().is_(0).or_().loops().is_(P.gt(10))
             ))
 
             vs2 = {}
@@ -3551,8 +3551,8 @@ class GremlinFSVertex(GremlinFSNode):
                                 templatectxi = found
 
                             else:
-                                templatectxi.push(vs2[v2.id].getall());
-                                templatectxi = templatectxi[templatectxi.length - 1]
+                                templatectxi.append(vs2[v2id].all())
+                                templatectxi = templatectxi[-1]
 
                     elif isinstance(v2, gremlin.structure.Edge):
                         haslabel = true
