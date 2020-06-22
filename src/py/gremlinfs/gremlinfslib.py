@@ -45,10 +45,6 @@ from .gremlinfsobj import GremlinFSObj
 from .gremlinfsobj import gfslist
 from .gremlinfsobj import gfsmap
 
-# 
-# 
-import config
-
 
 
 class GremlinFSError(Exception):
@@ -91,10 +87,15 @@ class GremlinFSBase(GremlinFSObj):
     logger = GremlinFSLogger.getLogger("GremlinFSBase")
 
     def __init__(self, **kwargs):
+
+        # JS jump:
+        # ReferenceError: Must call super constructor in derived class before accessing 'this' or returning from derived constructor
+        super().__init__()
+
         self.setall(kwargs)
 
-    def property(self, name, default = None, prefix = None):
-        return self.get(name, default, prefix = prefix)
+    def property(self, name, _default_ = None, prefix = None):
+        return self.get(name, _default_, prefix)
 
 
 
@@ -103,7 +104,7 @@ class GremlinFSPath(GremlinFSBase):
     logger = GremlinFSLogger.getLogger("GremlinFSPath")
 
     @classmethod
-    def paths(clazz):
+    def paths(self):
         return {
             "root": {
                 "type": "folder",
@@ -172,18 +173,18 @@ class GremlinFSPath(GremlinFSBase):
         }
 
     @classmethod
-    def path(clazz, path):
+    def path(self, path):
         paths = GremlinFSPath.paths()
         if paths and path in paths:
             return paths[path]
         return None
 
     @classmethod
-    def expand(clazz, path):
+    def expand(self, path):
         return GremlinFS.operations().utils().splitpath(path)
 
     @classmethod
-    def atpath(clazz, path, node = None):
+    def atpath(self, path, node = None):
 
         if not node:
             root = None
@@ -225,7 +226,7 @@ class GremlinFSPath(GremlinFSBase):
         return None
 
     @classmethod
-    def pathnode(clazz, nodeid, parent, path):
+    def pathnode(self, nodeid, parent, path):
 
         node = None
 
@@ -246,7 +247,7 @@ class GremlinFSPath(GremlinFSBase):
         return node
 
     @classmethod
-    def pathparent(clazz, path = []):
+    def pathparent(self, path = []):
 
         root = None
         if GremlinFS.operations().config("fs_root", None):
@@ -260,9 +261,10 @@ class GremlinFSPath(GremlinFSBase):
             return parent
 
         vindex = 0
-        for i, item in enumerate(path):
+        for item in path:
             if item == GremlinFS.operations().config("vertex_folder", ".V"):
-                vindex = i
+                break
+            vindex += 1
 
         if vindex:
             if vindex > 0:
@@ -274,9 +276,10 @@ class GremlinFSPath(GremlinFSBase):
         return parent
 
     @classmethod
-    def match(clazz, path):
+    def match(self, path):
+        clazz = self
 
-        match = {
+        match = gfsmap({
 
             "path": None,
             "full": None,
@@ -291,7 +294,7 @@ class GremlinFSPath(GremlinFSBase):
             "vertexproperty": None,
             "vertexedge": None
 
-        }
+        })
 
         match.update({
             "full": GremlinFS.operations().utils().splitpath(path)
@@ -311,9 +314,10 @@ class GremlinFSPath(GremlinFSBase):
         elif expanded and GremlinFS.operations().config("vertex_folder", ".V") in expanded:
 
             vindex = 0
-            for i, item in enumerate(expanded):
+            for item in expanded:
                 if item == GremlinFS.operations().config("vertex_folder", ".V"):
-                    vindex = i
+                    break
+                vindex += 1
 
             if len(expanded) == vindex + 1:
 
@@ -393,7 +397,7 @@ class GremlinFSPath(GremlinFSBase):
 
                 # else:
                 #     # Note; Unless I throw this here, I am unable to
-                #     # touch files as attributes. I think the default
+                #     # touch files as attributes. I think the _default_
                 #     # here should be to throw GremlinFSNotExistsError
                 #     # unless file/node is actually found
                 #     raise GremlinFSNotExistsError
@@ -518,8 +522,12 @@ class GremlinFSPath(GremlinFSBase):
         )
 
     def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            self.set(key, value)
+
+        # JS jump:
+        # ReferenceError: Must call super constructor in derived class before accessing 'this' or returning from derived constructor
+        super().__init__()
+
+        self.setall(kwargs)
 
     # 
 
@@ -538,24 +546,23 @@ class GremlinFSPath(GremlinFSBase):
     def mqevent(self, event):
         return GremlinFS.operations().mqevent(event)
 
-    def query(self, query, node = None, default = None):
-        return self.utils().query(query, node, default)
+    def query(self, query, node = None, _default_ = None):
+        return self.utils().query(query, node, _default_)
 
-    def eval(self, command, node = None, default = None):
-        return self.utils().eval(command, node, default)
+    def eval(self, command, node = None, _default_ = None):
+        return self.utils().eval(command, node, _default_)
 
-    def config(self, key = None, default = None):
-        return GremlinFS.operations().config(key, default)
+    def config(self, key = None, _default_ = None):
+        return GremlinFS.operations().config(key, _default_)
 
     def utils(self):
         return GremlinFS.operations().utils()
 
     # 
 
-    def enter(self, functioname, *args, **kwargs):
-        # self.logger.debug(' GremlinFSPath: ENTER: %s ' % (functioname))
-        # self.logger.debug(args)
-        # self.logger.debug(kwargs)
+    # JS jump:
+    # UnsupportedSyntaxError: Having both param accumulator and keyword args is unsupported
+    def enter(self, functioname, *args):
         pass
 
     # 
@@ -580,12 +587,12 @@ class GremlinFSPath(GremlinFSBase):
 
     def isFolder(self):
 
-        default = False
+        _default_ = False
         if self._type and self._type == "folder":
-            default = True
+            _default_ = True
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -595,57 +602,57 @@ class GremlinFSPath(GremlinFSBase):
             return False
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def isFile(self):
 
-        default = False
+        _default_ = False
         if self._type and self._type == "file":
-            default = True
+            _default_ = True
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -655,57 +662,57 @@ class GremlinFSPath(GremlinFSBase):
             return False
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def isLink(self):
 
-        default = False
+        _default_ = False
         if self._type and self._type == "link":
-            default = True
+            _default_ = True
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -715,57 +722,57 @@ class GremlinFSPath(GremlinFSBase):
             return False
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def isFound(self):
 
-        default = False
+        _default_ = False
         if self._type:
-            default = True
+            _default_ = True
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -775,13 +782,13 @@ class GremlinFSPath(GremlinFSBase):
             return False
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex":
             node = self.node()
@@ -790,10 +797,10 @@ class GremlinFSPath(GremlinFSBase):
             return False
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_property":
             node = GremlinFSUtils.found( self.node() )
@@ -804,16 +811,16 @@ class GremlinFSPath(GremlinFSBase):
             return False
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_in_edge":
             node = GremlinFSUtils.found( self.node() )
@@ -828,9 +835,9 @@ class GremlinFSPath(GremlinFSBase):
             return False
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
 
     # 
@@ -851,12 +858,12 @@ class GremlinFSPath(GremlinFSBase):
         if self.isFile():
             raise GremlinFSIsFileError(self)
 
-        default = None
+        _default_ = None
         if self._type:
-            default = None
+            _default_ = None
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -872,12 +879,12 @@ class GremlinFSPath(GremlinFSBase):
 
             parent = self.parent()
             newfolder = GremlinFSVertex.make(
-                name = newname,
-                label = newlabel,
-                uuid = newuuid
+                newname,
+                newlabel,
+                newuuid
             ).createFolder(
-                parent = parent,
-                mode = mode
+                parent,
+                mode
             )
 
             self.mqevent(GremlinFSEvent(
@@ -888,13 +895,13 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex":
 
@@ -914,12 +921,12 @@ class GremlinFSPath(GremlinFSBase):
 
             if GremlinFS.operations().isFolderLabel(newlabel):
                 newfolder = GremlinFSVertex.make(
-                    name = newname,
-                    label = newlabel,
-                    uuid = newuuid
+                    newname,
+                    newlabel,
+                    newuuid
                 ).createFolder(
-                    parent = None,
-                    mode = mode
+                    None,
+                    mode
                 )
 
                 self.mqevent(GremlinFSEvent(
@@ -929,12 +936,12 @@ class GremlinFSPath(GremlinFSBase):
 
             else:
                 newfile = GremlinFSVertex.make(
-                    name = newname,
-                    label = newlabel,
-                    uuid = newuuid
+                    newname,
+                    newlabel,
+                    newuuid
                 ).create(
-                    parent = None,
-                    mode = mode
+                    None,
+                    mode
                 )
 
                 self.mqevent(GremlinFSEvent(
@@ -945,43 +952,43 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def readFolder(self):
 
         if not self.isFound():
             raise GremlinFSNotExistsError(self)
 
-        entries = []
+        entries = gfslist([])
 
         if self._path == "root":
             entries.extend([
@@ -1009,7 +1016,7 @@ class GremlinFSPath(GremlinFSBase):
                     if nodeid:
                         entries.append(nodeid)
 
-            return entries
+            return entries.tolist()
 
         elif self._path == "atpath":
             entries.extend([
@@ -1023,16 +1030,18 @@ class GremlinFSPath(GremlinFSBase):
                     if nodeid:
                         entries.append(nodeid)
 
-            return entries
+            return entries.tolist()
 
         elif self._path == "vertex_labels":
             labels = self.g().V().label().dedup()
             if labels:
                 for label in labels:
                     if label:
-                        entries.append(label.strip().replace("\t", "").replace("\t", ""))
+                        # TODO: Fix
+                        # list(entries).append(label.strip().replace("\t", "").replace("\t", ""))
+                        entries.append(label)
 
-            return entries
+            return entries.tolist()
 
         # elif self._path == "vertex_label":
         #     return entries
@@ -1042,13 +1051,13 @@ class GremlinFSPath(GremlinFSBase):
             if not label:
                 label = "vertex"
 
-            short = False
+            _short_ = False
 
             parent = self.parent()
             nodes = None
 
             if parent:
-                short = True
+                _short_ = True
                 if label == "vertex":
                     nodes = GremlinFSVertex.fromVs(
                         self.g().V(
@@ -1086,11 +1095,11 @@ class GremlinFSPath(GremlinFSBase):
 
             nodes = GremlinFSUtils.found( nodes )
             for node in nodes:
-                nodeid = node.toid( short )
+                nodeid = node.toid( _short_ )
                 if nodeid:
                     entries.append( nodeid )
 
-            return entries
+            return entries.tolist()
 
         elif self._path == "vertex":
             label = self._vertexlabel
@@ -1104,7 +1113,7 @@ class GremlinFSPath(GremlinFSBase):
                 GremlinFS.operations().config("out_edge_folder", "EO"),
             ])
 
-            return entries
+            return entries.tolist()
 
         # elif self._path == "vertex_properties":
         #     return entries
@@ -1132,11 +1141,11 @@ class GremlinFSPath(GremlinFSBase):
             if nodes:
                 for cnode in nodes:
                     if cnode.get("label") and cnode.get("name"):
-                        entries.append( "%s@%s" % (cnode.get("name"), cnode.get("label")) )
+                        entries.append( cnode.get("name") + "@" + cnode.get("label") )
                     elif cnode.get("label"):
-                        entries.append( "%s" % (cnode.get("label")) )
+                        entries.append( cnode.get("label") )
 
-            return entries
+            return entries.tolist()
 
         elif self._path == "vertex_out_edges":
             label = self._vertexlabel
@@ -1152,11 +1161,11 @@ class GremlinFSPath(GremlinFSBase):
             if nodes:
                 for cnode in nodes:
                     if cnode.get("label") and cnode.get("name"):
-                        entries.append( "%s@%s" % (cnode.get("name"), cnode.get("label")) )
+                        entries.append( cnode.get("name") + "@" + cnode.get("label") )
                     elif cnode.get("label"):
-                        entries.append( "%s" % (cnode.get("label")) )
+                        entries.append( cnode.get("label") )
 
-            return entries
+            return entries.tolist()
 
         # elif self._path == "vertex_edge":
         #     return entries
@@ -1209,12 +1218,12 @@ class GremlinFSPath(GremlinFSBase):
         if not data:
             data = ""
 
-        default = data
+        _default_ = data
         if self._type:
-            default = data
+            _default_ = data
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -1229,12 +1238,12 @@ class GremlinFSPath(GremlinFSBase):
                 raise GremlinFSNotExistsError(self)
 
             newfile = GremlinFSVertex.make(
-                name = newname,
-                label = newlabel,
-                uuid = newuuid
+                newname,
+                newlabel,
+                newuuid
             ).create(
-                parent = parent,
-                mode = mode
+                parent,
+                mode
             )
 
             self.mqevent(GremlinFSEvent(
@@ -1245,22 +1254,22 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_property":
             node = GremlinFSUtils.found( self.node() )
@@ -1277,27 +1286,27 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def readFile(self, size = 0, offset = 0):
 
@@ -1370,49 +1379,49 @@ class GremlinFSPath(GremlinFSBase):
         if not sourcematch.isFound():
             raise GremlinFSNotExistsError(self)
 
-        default = None
+        _default_ = None
         if self._type:
-            default = None
+            _default_ = None
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
-            return default
+            return _default_
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_in_edge":
 
@@ -1485,58 +1494,58 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default        
+        return _default_        
 
     def readLink(self):
 
         if not self.isFound():
             raise GremlinFSNotExistsError(self)
 
-        default = None
+        _default_ = None
         if self._type:
-            default = None
+            _default_ = None
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
-            return default
+            return _default_
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_in_edge":
             node = GremlinFSUtils.found( self.node() )
@@ -1559,58 +1568,58 @@ class GremlinFSPath(GremlinFSBase):
             return newpath
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def deleteLink(self):
 
         if not self.isFound():
             raise GremlinFSNotExistsError(self)
 
-        default = None
+        _default_ = None
         if self._type:
-            default = None
+            _default_ = None
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
-            return default
+            return _default_
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_property":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_in_edge":
 
@@ -1715,9 +1724,9 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     # 
 
@@ -1726,12 +1735,12 @@ class GremlinFSPath(GremlinFSBase):
         if not self.isFound():
             raise GremlinFSNotExistsError(self)
 
-        default = None
+        _default_ = None
         if self._type:
-            default = None
+            _default_ = None
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -1752,22 +1761,22 @@ class GremlinFSPath(GremlinFSBase):
                 return data
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_property":
             node = GremlinFSUtils.found( self.node() )
@@ -1788,39 +1797,39 @@ class GremlinFSPath(GremlinFSBase):
                 return data
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def writeNode(self, data, offset = 0):
 
         if not self.isFound():
             raise GremlinFSNotExistsError(self)
 
-        default = data
+        _default_ = data
         if self._type:
-            default = data
+            _default_ = data
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -1833,19 +1842,19 @@ class GremlinFSPath(GremlinFSBase):
             old = node.readProperty(
                 self.config("data_property"),
                 None,
-                encoding = "base64"
+                "base64"
             )
 
             old = self.utils().tobytes(old)
 
-            new = GremlinFSUtils.irepl(old, data, offset)
+            _new_ = GremlinFSUtils.irepl(old, data, offset)
 
-            new = self.utils().tostring(new)
+            _new_ = self.utils().tostring(_new_)
 
             node.writeProperty(
                 self.config("data_property"),
-                new,
-                encoding = "base64"
+                _new_,
+                "base64"
             )
 
             self.mqevent(GremlinFSEvent(
@@ -1876,22 +1885,22 @@ class GremlinFSPath(GremlinFSBase):
             return data
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_property":
             node = GremlinFSUtils.found( self.node() )
@@ -1903,13 +1912,13 @@ class GremlinFSPath(GremlinFSBase):
 
             old = self.utils().tobytes(old)
 
-            new = GremlinFSUtils.irepl(old, data, offset)
+            _new_ = GremlinFSUtils.irepl(old, data, offset)
 
-            new = self.utils().tostring(new)
+            _new_ = self.utils().tostring(_new_)
 
             node.writeProperty(
                 self._vertexproperty,
-                new
+                _new_
             )
 
             self.mqevent(GremlinFSEvent(
@@ -1920,37 +1929,37 @@ class GremlinFSPath(GremlinFSBase):
             return data
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def clearNode(self):
 
         if not self.isFound():
             raise GremlinFSNotExistsError(self)
 
-        default = None
+        _default_ = None
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -1969,22 +1978,22 @@ class GremlinFSPath(GremlinFSBase):
             return None
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_property":
             node = GremlinFSUtils.found( self.node() )
@@ -2002,27 +2011,27 @@ class GremlinFSPath(GremlinFSBase):
             return None
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def moveNode(self, newmatch):
 
@@ -2032,12 +2041,12 @@ class GremlinFSPath(GremlinFSBase):
         # if newmatch.isFound():
         #     raise GremlinFSExistsError(self)
 
-        default = None
+        _default_ = None
         if self._type:
-            default = None
+            _default_ = None
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -2056,22 +2065,22 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_property":
 
@@ -2117,39 +2126,39 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def deleteNode(self):
 
         if not self.isFound():
             raise GremlinFSNotExistsError(self)
 
-        default = None
+        _default_ = None
         if self._type:
-            default = None
+            _default_ = None
 
         # if self._path == "root":
-        #     return default
+        #     return _default_
 
         # el
         if self._path == "atpath":
@@ -2165,22 +2174,22 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "vertex_labels":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_label":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertexes":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_properties":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_folder_property":
-        #     return default
+        #     return _default_
 
         elif self._path == "vertex_property":
             # label = self._vertexlabel
@@ -2197,27 +2206,27 @@ class GremlinFSPath(GremlinFSBase):
             return True
 
         # elif self._path == "vertex_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edges":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_in_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "vertex_out_edge":
-        #     return default
+        #     return _default_
 
         # elif self._path == "create_vertex":
-        #     return default
+        #     return _default_
 
-        return default
+        return _default_
 
     def setProperty(self, key, value):
 
@@ -2239,7 +2248,7 @@ class GremlinFSPath(GremlinFSBase):
 
         return True
 
-    def getProperty(self, key, default = None):
+    def getProperty(self, key, _default_ = None):
 
         if not self.isFound():
             raise GremlinFSNotExistsError(self)
@@ -2249,10 +2258,10 @@ class GremlinFSPath(GremlinFSBase):
             if node:
                 return node.getProperty(
                     key,
-                    default
+                    _default_
             )
 
-        return default
+        return _default_
 
 
 
@@ -2261,22 +2270,23 @@ class GremlinFSNode(GremlinFSBase):
     logger = GremlinFSLogger.getLogger("GremlinFSNode")
 
     @classmethod
-    def parse(clazz, id):
+    def parse(self, id):
         return None
 
     @classmethod
-    def infer(clazz, field, obj, default = None):
+    def infer(self, field, obj, _default_ = None):
+        clazz = self
         parts = clazz.parse( obj )
         if not field in parts:
-            return default
-        return parts.get(field, default)
+            return _default_
+        return parts.get(field, _default_)
 
     @classmethod
-    def label(clazz, name, label, fstype = "file", default = "vertex"):
+    def label(self, name, label, fstype = "file", _default_ = "vertex"):
         if not name:
-            return default
+            return _default_
         if not label:
-            return default
+            return _default_
         for label_config in GremlinFS.operations().config("labels", []):
             if "type" in label_config and label_config["type"] == fstype:
                 compiled = None
@@ -2287,47 +2297,32 @@ class GremlinFSNode(GremlinFSBase):
 
                 if compiled:
                     if compiled.search(name):
-                        label = label_config.get("label", default)
+                        label = label_config.get("label", _default_)
                         break
 
         return label
 
-    @classmethod
-    def vals(clazz, invals):
-        if not invals:
-            return {}
-        vals = {}
-        for key, val in invals.items():
-            if key and "T.label" == str(key):
-                vals['label'] = val
-            elif key and "T.id" == str(key):
-                vals['id'] = val['@value']
-            # elif key and "uuid" in str(key):
-            #     vals['uuid'] = val[0]
-            # elif key and "name" in str(key):
-            #     vals['name'] = val[0]
-            elif key and type(val) in (tuple, list):
-                vals[key] = val[0]
-            else:
-                vals[key] = val
-        return vals
-
-    @classmethod
-    def fromMap(clazz, map):
-        vals = clazz.vals(map)
-        return clazz(**vals)
-
-    @classmethod
-    def fromMaps(clazz, maps):
-        nodes = []
-        for map in maps:
-            vals = clazz.vals(map)
-            nodes.append(clazz(**vals))
-        return nodes
+#     @classmethod
+#     def fromV(self, v):
+#         clazz = self
+#         return clazz.fromMap(
+#             v.valueMap(True).next()
+#         )
+#  
+#     @classmethod
+#     def fromVs(self, vs):
+#         clazz = self
+#         return clazz.fromMaps(
+#             vs.valueMap(True).toList()
+#         )
 
     def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            self.set(key, value)
+
+        # JS jump:
+        # ReferenceError: Must call super constructor in derived class before accessing 'this' or returning from derived constructor
+        super().__init__()
+
+        self.setall(kwargs)
 
     # 
 
@@ -2346,14 +2341,14 @@ class GremlinFSNode(GremlinFSBase):
     def mqevent(self, event):
         return GremlinFS.operations().mqevent(event)
 
-    def query(self, query, node = None, default = None):
-        return self.utils().query(query, node, default)
+    def query(self, query, node = None, _default_ = None):
+        return self.utils().query(query, node, _default_)
 
-    def eval(self, command, node = None, default = None):
-        return self.utils().eval(command, node, default)
+    def eval(self, command, node = None, _default_ = None):
+        return self.utils().eval(command, node, _default_)
 
-    def config(self, key = None, default = None):
-        return GremlinFS.operations().config(key, default)
+    def config(self, key = None, _default_ = None):
+        return GremlinFS.operations().config(key, _default_)
 
     def utils(self):
         return GremlinFS.operations().utils()
@@ -2370,23 +2365,24 @@ class GremlinFSNode(GremlinFSBase):
 
     # 
 
-    def toid(self, short = False):
+    def toid(self, _short_ = False):
         node = self
         mapid = node.get('id', None)
         mapuuid = node.get('uuid', None)
         maplabel = node.get('label', None)
         mapname = node.get('name', None)
 
-        if mapname:
-            mapname = mapname.strip().replace("\t", "").replace("\t", "")
+        # TODO: Fix
+        # if mapname:
+        #     mapname = mapname.strip().replace("\t", "").replace("\t", "")
 
-        if mapname and mapuuid and maplabel and not short:
+        if mapname and mapuuid and maplabel and not _short_:
             if maplabel == "vertex":
-                return "%s@%s" % (mapname, mapuuid)
+                return mapname + "@" + mapuuid
             else:
-                return "%s@%s@%s" % (mapname, maplabel, mapuuid)
+                return mapname + "@" + maplabel + "@" + mapuuid
 
-        elif mapname and maplabel and short:
+        elif mapname and maplabel and _short_:
             return mapname
 
         elif mapname and maplabel:
@@ -2418,22 +2414,22 @@ class GremlinFSNode(GremlinFSBase):
         if not node:
             return False
 
-        data = node.has(name, prefix = prefix)
+        data = node.has(name, prefix)
         if not data:
             return False
 
         return True
 
-    def getProperty(self, name, default = None, encoding = None, prefix = None):
+    def getProperty(self, name, _default_ = None, encoding = None, prefix = None):
 
         node = self
 
         if not node:
-            return default
+            return _default_
 
-        data = node.get(name, None, prefix = prefix)
+        data = node.get(name, None, prefix)
         if not data:
-            return default
+            return _default_
 
         if encoding:
             data = self.utils().tobytes(data)
@@ -2459,10 +2455,10 @@ class GremlinFSNode(GremlinFSBase):
             data = self.utils().encode(data, encoding)
             data = self.utils().tostring(data)
 
-        node.set(name, data, prefix = prefix)
+        node.set(name, data, prefix)
 
         if prefix:
-            name = "%s.%s" % (prefix, name)
+            name = prefix + "." + name
 
         # GremlinFSVertex.fromV(
         self.g().V(
@@ -2483,10 +2479,10 @@ class GremlinFSNode(GremlinFSBase):
 
         nodeid = node.get("id")
 
-        node.set(name, None, prefix = prefix)
+        node.set(name, None, prefix)
 
         if prefix:
-            name = "%s.%s" % (prefix, name)
+            name = prefix + "." + name
 
         # Having issues with exception throwing, even though deletion works
         try:
@@ -2504,25 +2500,28 @@ class GremlinFSNode(GremlinFSBase):
 
         node = self
 
-        existing = {}
+        existing = gfsmap({})
 
         existing.update(node.all(prefix))
 
         if existing:
-            for key, value in existing.items():
+            for key in dict(existing):
+                value = existing[key]
                 if not key in properties:
                     node.unsetProperty(
                         key,
-                        prefix = prefix
+                        prefix
                     )
 
         if properties:
-            for key, value in properties.items():
+            for key in dict(properties):
+                value = properties[key]
                 try:
                     node.setProperty(
                         key,
                         value,
-                        prefix = prefix
+                        None,
+                        prefix
                     )
                 except Exception as e:
                     self.logger.exception(' GremlinFS: setProperties exception ', e)
@@ -2531,259 +2530,22 @@ class GremlinFSNode(GremlinFSBase):
 
         node = self
 
-        properties = {}
+        properties = gfsmap({})
         properties.update(node.all(prefix))
 
-        return properties
+        return properties.tomap()
 
-    def readProperty(self, name, default = None, encoding = None, prefix = None):
-        return self.getProperty(name, default, encoding = encoding, prefix = prefix)
+    def readProperty(self, name, _default_ = None, encoding = None, prefix = None):
+        return self.getProperty(name, _default_, encoding, prefix)
 
     def writeProperty(self, name, data, encoding = None, prefix = None):
-        return self.setProperty(name, data, encoding = encoding, prefix = prefix)
+        return self.setProperty(name, data, encoding, prefix)
 
     def invoke(self, handler, event, chain = [], data = {}):
-
-        import subprocess
-
-        node = self
-
-        try:
-
-            path = data.get("path", None)
-            property = data.get("property", None)
-            value = data.get("value", None)
-
-            if node and handler:
-
-                handlercwd = "%s/%s/vertex/%s" % (
-                    self.config("mount_point"),
-                    self.config("vertex_folder"),
-                    node.get("uuid")
-                )
-
-                handlerpath = "%s/%s/vertex/%s/%s" % (
-                    self.config("mount_point"),
-                    self.config("vertex_folder"),
-                    node.get("uuid"),
-                    handler
-                )
-
-                env = {}
-
-                cwd = handlercwd
-                args = [handlerpath]
-
-                if node:
-
-                    env["UUID"] = node.get("uuid", None)
-                    args.append("-i")
-                    args.append(node.get("uuid", None))
-
-                    env["NAME"] = node.get("name", None)
-                    args.append("-n")
-                    args.append(node.get("name", None))
-
-                if event:
-
-                    env["EVENT"] = event
-                    args.append("-e")
-                    args.append(event)
-
-                if property:
-
-                    env["PROPERTY"] = property
-                    args.append("-k")
-                    args.append(property)
-
-                if value:
-
-                    env["VALUE"] = value
-                    args.append("-v")
-                    args.append(value)
-
-                nodes = {}
-                chainnodes = []
-                if chain and len(chain) > 0:
-                    for elem in chain:
-
-                        chainelem = {}
-                        # chaininnode = None
-                        # chaininnode = None
-                        chainoutnodew = None
-                        chainoutnodew = None
-                        chainlink = None
-                        chainlinkw = None
-
-                        if "innode" in elem:
-                            # chaininnode = elem.get('innode', None)
-                            # chaininnodew = GremlinFSNodeWrapper(
-                            #     node = chaininnode
-                            # )
-                            # chainelem["node"] = chaininnodew
-                            pass
-
-                        if "outnode" in elem:
-                            chainoutnode = elem.get('outnode', None)
-                            chainoutnodew = GremlinFSNodeWrapper(
-                                node = chainoutnode
-                            )
-                            chainelem["node"] = chainoutnodew
-
-                        if "link" in elem:
-                            chainlink = elem.get('link', None)
-                            chainlinkw = GremlinFSNodeWrapper(
-                                node = chainlink
-                            )
-                            chainelem["link"] = chainlinkw
-
-                        if chainoutnodew and chainlink and chainlink.has("name") and chainlink.has("label"):
-                            nodes["%s@%s" % (chainlink.get("name"), chainlink.get("label"))] = chainoutnodew
-
-                        elif chainoutnodew and chainlink and chainlink.has("name"):
-                            nodes[chainlink.get("name")] = chainoutnodew
-
-                        elif chainoutnodew and chainlink and chainlink.has("label"):
-                            nodes[chainlink.get("label")] = chainoutnodew
-
-                        chainnodes.append(chainelem)
-
-                data = node.getProperty(handler, default = None, encoding = None, prefix = None)
-
-                script = data
-
-                try:
-
-                    template = data
-                    if template:
-
-                        import pystache
-                        renderer = pystache.Renderer()
-
-                        templatectx = {
-                            "event": event,
-                            "property": property,
-                            "value": value,
-                            "self": GremlinFSNodeWrapper(
-                                node = node
-                            ),
-                            # "node": ...,
-                            "nodes": nodes,
-                            "chain": chainnodes
-                        }
-
-                        for idx, chainnode in enumerate(chainnodes):
-                            templatectx["chain%d" % (idx)] = chainnode
-
-                        script = pystache.render(
-                            template, templatectx
-                        )
-
-                except Exception as e:
-                    self.logger.exception(' GremlinFS: invoke handler render exception ')
-                    script = data
-
-                executable = "sh"
-                subprocess.call(
-                    [executable, '-c', script],
-                    cwd = cwd,
-                    env = env
-                )
-
-        except Exception as e:
-            self.logger.exception(' GremlinFS: node invoke exception ')
+        pass
 
     def event(self, event, chain = [], data = {}, propagate = True):
-
-        node = self
-
-        try:
-
-            property = data.get("property", None)
-            value = data.get("value", None)
-
-            if node and property and node.has("on.%s.%s" % (event, property)):
-                node.invoke(
-                    handler = "on.%s.%s" % (event, property),
-                    event = event,
-                    chain = chain,
-                    data = data
-                )
-
-            if node and node.has("on.%s" % (event)):
-                node.invoke(
-                    handler = "on.%s" % (event),
-                    event = event,
-                    chain = chain,
-                    data = data
-                )
-
-            # Check if this event should be propagated
-            if node and propagate:
-                inedges = node.edges(None, True)
-                for inedge in inedges:
-                    if inedge:
-
-                        innode = inedge.node(False)
-                        outnode = inedge.node(True)
-
-                        if inedge.has("name") and inedge.has("label"):
-                            newchain = chain.copy()
-                            newchain.insert(0, {
-                                "innode": innode,
-                                "outnode": outnode,
-                                "link": inedge
-                            })
-                            innode.event(
-                                event = "%s@%s.%s" % (inedge.get("name"), inedge.get("label"), event),
-                                chain = newchain,
-                                data = data,
-                                propagate = propagate
-                            )
-
-                        if inedge.has("name"):
-                            newchain = chain.copy()
-                            newchain.insert(0, {
-                                "innode": innode,
-                                "outnode": outnode,
-                                "link": inedge
-                            })
-                            innode.event(
-                                event = "%s.%s" % (inedge.get("name"), event),
-                                chain = newchain,
-                                data = data,
-                                propagate = propagate
-                            )
-
-                        if inedge.has("label"):
-                            newchain = chain.copy()
-                            newchain.insert(0, {
-                                "innode": innode,
-                                "outnode": outnode,
-                                "link": inedge
-                            })
-                            innode.event(
-                                event = "%s.%s" % (inedge.get("label"), event),
-                                chain = newchain,
-                                data = data,
-                                propagate = propagate
-                            )
-
-                        newchain = chain.copy()
-                        newchain.insert(0, {
-                            "innode": innode,
-                            "outnode": outnode,
-                            "link": inedge
-                        })
-                        innode.event(
-                            event = "%s.%s" % ("x", event),
-                            chain = newchain,
-                            data = data,
-                            propagate = propagate
-                        )
-
-        except Exception as e:
-            self.logger.exception(' GremlinFS: node event exception ', e)
+        pass
 
 
 
@@ -2792,7 +2554,7 @@ class GremlinFSVertex(GremlinFSNode):
     logger = GremlinFSLogger.getLogger("GremlinFSVertex")
 
     @classmethod
-    def parse(clazz, id):
+    def parse(self, id):
 
         if not id:
             return {}
@@ -2809,7 +2571,7 @@ class GremlinFSVertex(GremlinFSNode):
             nodelbl = matcher.group(3)
             nodeuid = matcher.group(4)
             return {
-                "name": "%s.%s" % (nodenme, nodetpe),
+                "name": nodenme + "." + nodetpe,
                 "type": nodetpe,
                 "label": nodelbl,
                 "uuid": nodeuid
@@ -2842,7 +2604,7 @@ class GremlinFSVertex(GremlinFSNode):
             nodetpe = matcher.group(2)
             nodeuid = matcher.group(3)
             return {
-                "name": "%s.%s" % (nodenme, nodetpe),
+                "name": nodenme + "." + nodetpe,
                 "type": nodetpe,
                 "uuid": nodeuid
             }
@@ -2871,7 +2633,7 @@ class GremlinFSVertex(GremlinFSNode):
             nodenme = matcher.group(1)
             nodetpe = matcher.group(2)
             return {
-                "name": "%s.%s" % (nodenme, nodetpe),
+                "name": nodenme + "." + nodetpe,
                 "type": nodetpe
             }
 
@@ -2893,13 +2655,14 @@ class GremlinFSVertex(GremlinFSNode):
         }
 
     @classmethod
-    def make(clazz, name, label, uuid = None):
-        return clazz(name = name, label = label, uuid = uuid)
+    def make(self, name, label, uuid = None):
+        return GremlinFSVertex(name = name, label = label, uuid = uuid)
 
     @classmethod
-    def load(clazz, id):
+    def load(self, id):
+        clazz = self
 
-        parts = clazz.parse(id)
+        parts = GremlinFSVertex.parse(id)
         if parts and \
             "uuid" in parts and \
             "name" in parts and \
@@ -2973,13 +2736,44 @@ class GremlinFSVertex(GremlinFSNode):
         return None
 
     @classmethod
-    def fromV(clazz, v):
+    def fromMap(self, map):
+
+        # JS jump:
+        # UnsupportedSyntaxError: '**kwargs' syntax isn't supported
+        # return clazz(**vals)
+        node = GremlinFSVertex()
+        node.fromobj(map)
+
+        return node
+
+    @classmethod
+    def fromMaps(self, maps):
+        # clazz = self
+        nodes = gfslist([])
+
+        for map in maps:
+
+            # JS jump:
+            # UnsupportedSyntaxError: '**kwargs' syntax isn't supported
+            # list(nodes).append(clazz(**vals))
+            node = GremlinFSVertex()
+            node.fromobj(map)
+
+            # list(nodes).append(node)
+            nodes.append(node)
+
+        return nodes.tolist()
+
+    @classmethod
+    def fromV(self, v):
+        clazz = self
         return GremlinFSVertex.fromMap(
             v.valueMap(True).next()
         )
 
     @classmethod
-    def fromVs(clazz, vs):
+    def fromVs(self, vs):
+        clazz = self
         return GremlinFSVertex.fromMaps(
             vs.valueMap(True).toList()
         )
@@ -3693,7 +3487,7 @@ class GremlinFSVertex(GremlinFSNode):
         data = node.readProperty(
             self.config("data_property"),
             "",
-            encoding = "base64"
+            "base64"
         )
 
         try:
@@ -3703,7 +3497,7 @@ class GremlinFSVertex(GremlinFSNode):
                 template = templatenodes[0].readProperty(
                     self.config("data_property"),
                     "",
-                    encoding = "base64"
+                    "base64"
                 )
 
             elif node.hasProperty(self.config("template_property")):
@@ -3726,68 +3520,62 @@ class GremlinFSVertex(GremlinFSNode):
             ps = GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
                 GremlinFS.operations().a().outE().inV()
             ).until(
-                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(p.gt(10))
             ).path().toList()
 
             vs = GremlinFSVertex.fromVs(GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
                 GremlinFS.operations().a().outE().inV()
             ).until(
-                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(p.gt(10))
             ))
 
             vs2 = {}
             for v in vs:
                 vs2[v.get('id')] = v
 
-            templatectx = vs2[ node.get('id') ].all()
+            templatectx = vs2[ node.get('id') ].getall()
             templatectxi = templatectx
 
             for v in ps:
                 templatectxi = templatectx
-                haslabel = False
+                haslabel = False;
                 for v2 in v.objects:
-                    v2id = (v2.id)['@value']
-                    if isinstance(v2, Vertex):
+                    if isinstance(v2, gremlin.structure.Vertex):
                         if haslabel:
-                            found = None
+                            found = undefined;
                             for ctemplatectxi in templatectxi:
-                                if ctemplatectxi.get('id') == v2id:
-                                    found = ctemplatectxi
+                                if ctemplatectxi.id == v2.id:
+                                    found = ctemplatectxi; # templatectxi[iii]
 
                             if found:
                                 templatectxi = found
 
                             else:
-                                list(templatectxi).append(vs2[v2id].all())
-                                templatectxi = templatectxi[-1]
+                                templatectxi.push(vs2[v2.id].getall());
+                                templatectxi = templatectxi[templatectxi.length - 1]
 
-                    elif isinstance(v2, Edge):
-                        haslabel = True
+                    elif isinstance(v2, gremlin.structure.Edge):
+                        haslabel = true
                         if v2.label in templatectxi:
                             pass
                         else:
                             templatectxi[v2.label] = []
 
-                        templatectxi = templatectxi[v2.label]
+                        templatectxi = templatectxi[v2.label];
 
             if template:
 
                 data = self.utils().render(
-                    template, {
-                        "self": GremlinFSNodeWrapper(
-                            node = node
-                        )
-                    }
+                    template,
+                    templatectx
                 )
 
             elif readfn:
 
                 data = readfn(
-                    node = node,
-                    wrapper = GremlinFSNodeWrapper(
-                        node = node
-                    ),
-                    data = data
+                    node,
+                    templatectx,
+                    data
                 )
 
         except Exception as e:
@@ -3821,7 +3609,7 @@ class GremlinFSVertex(GremlinFSNode):
         if not namespace:
             namespace = GremlinFS.operations().config("fs_ns")
 
-        newfolder = self.create(parent = parent, mode = mode, owner = owner, group = group, namespace = namespace)
+        newfolder = self.create(parent, mode, owner, group, namespace)
 
         try:
 
@@ -3837,12 +3625,7 @@ class GremlinFSVertex(GremlinFSNode):
                 ).property(
                     'in_name', self.config("in_name")
                 ).property(
-                    'query', "g.V('%s').has('uuid', '%s').has('type', '%s').inE('%s').outV()" % (
-                        str(newfolder.get("id")),
-                        str(newfolder.get("uuid")),
-                        'group',
-                        self.config("in_label")
-                    )
+                    'query', "g.V('" + str(newfolder.get("id")) + "').has('uuid', '" + str(newfolder.get("uuid")) + "').has('type', '" + 'group' + "').inE('" + self.config("in_label") + "').outV()"
                 )
             )
 
@@ -4079,19 +3862,21 @@ class GremlinFSVertex(GremlinFSNode):
             # self.logger.exception(' GremlinFS: parent exception ', e)
             return None
 
-    def parents(self, list = []):
+    def parents(self, _list_ = []):
 
         node = self
 
-        if not list:
-            list = []
+        if not _list_:
+            _list_ = gfslist([])
+        else:
+            _list_ = gfslist(_list_)
 
         parent = node.parent()
         if parent and parent.get("id") and parent.get("id") != node.get("id"):
-            list.append(parent)
-            return parent.parents(list)
+            _list_.append(parent)
+            return parent.parents(_list_.tolist())
 
-        return list
+        return _list_.tolist()
 
     def path(self):
         return [ele for ele in reversed(self.parents([self]))]
@@ -4121,7 +3906,7 @@ class GremlinFSVertex(GremlinFSNode):
         return []
 
     def readFolderEntries(self):
-        return self.children();
+        return self.children()
 
 
 
@@ -4130,7 +3915,7 @@ class GremlinFSEdge(GremlinFSNode):
     logger = GremlinFSLogger.getLogger("GremlinFSEdge")
 
     @classmethod
-    def parse(clazz, id):
+    def parse(self, id):
 
         if not id:
             return {}
@@ -4149,17 +3934,18 @@ class GremlinFSEdge(GremlinFSNode):
                 "label": nodelbl
             }
 
-        # default to label
+        # _default_ to label
         return {
             "label": id
         }
 
     @classmethod
-    def make(clazz, name, label, uuid = None):
-        return clazz(name = name, label = label, uuid = uuid)
+    def make(self, name, label, uuid = None):
+        return GremlinFSEdge(name = name, label = label, uuid = uuid)
 
     @classmethod
-    def load(clazz, id):
+    def load(self, id):
+        clazz = self
 
         parts = GremlinFSEdge.parse(id)
         if parts and \
@@ -4235,28 +4021,42 @@ class GremlinFSEdge(GremlinFSNode):
         return None
 
     @classmethod
-    def fromMap(clazz, map):
+    def fromMap(self, map):
+
+        # JS jump:
+        # UnsupportedSyntaxError: '**kwargs' syntax isn't supported
+        # return clazz(**vals)
         node = GremlinFSEdge()
         node.fromobj(map)
+
         return node
 
     @classmethod
-    def fromMaps(clazz, maps):
+    def fromMaps(self, maps):
+        # clazz = self
         nodes = gfslist([])
+
         for map in maps:
+
+            # JS jump:
+            # UnsupportedSyntaxError: '**kwargs' syntax isn't supported
+            # list(nodes).append(clazz(**vals))
             node = GremlinFSEdge()
             node.fromobj(map)
             nodes.append(node)
+
         return nodes.tolist()
 
     @classmethod
-    def fromE(clazz, e):
+    def fromE(self, e):
+        clazz = self
         return GremlinFSEdge.fromMap(
             e.valueMap(True).next()
         )
 
     @classmethod
-    def fromEs(clazz, es):
+    def fromEs(self, es):
+        clazz = self
         return GremlinFSEdge.fromMaps(
             es.valueMap(True).toList()
         )
@@ -4314,6 +4114,11 @@ class GremlinFSNodeWrapper(GremlinFSBase):
     logger = GremlinFSLogger.getLogger("GremlinFSNodeWrapper")
 
     def __init__(self, node):
+
+        # JS jump:
+        # ReferenceError: Must call super constructor in derived class before accessing 'this' or returning from derived constructor
+        super().__init__()
+
         self.node = node
 
     def __getattr__(self, attr):
@@ -4352,10 +4157,10 @@ class GremlinFSNodeWrapper(GremlinFSBase):
 
             if edgenodes:
                 if len(edgenodes) > 1:
-                    ret = []
+                    ret = gfslist([])
                     for edgenode in edgenodes:
                         ret.append(GremlinFSNodeWrapper(edgenode))
-                    return ret
+                    return ret.tolist()
                 elif len(edgenodes) == 1:
                     return GremlinFSNodeWrapper(edgenodes[0])
 
@@ -4370,17 +4175,17 @@ class GremlinFSNodeWrapper(GremlinFSBase):
 
         dsprefix = "ds"
         if prefix:
-            dsprefix = "ds.%s" % (prefix)
+            dsprefix = "ds." + prefix
 
-        existing = {}
+        existing = gfsmap({})
         existing.update(node.all(prefix))
 
-        datasources = {}
+        datasources = gfsmap({})
         datasources.update(node.all(dsprefix))
 
-        props = {}
+        props = gfsmap({})
 
-        for key in existing:
+        for key in dict(existing):
             if key and not key.startswith("ds."):
                 try:
                     if key in datasources:
@@ -4393,7 +4198,8 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                             # as '.' denotes field/object boundary. Therefore all mustache
                             # given properties has to use '__' to indicated '.'
                             # props[key.replace(".", "__")] = str(ret).strip()
-                            props[key] = str(ret).strip()
+                            # TODO: Fix
+                            props[key] = str(ret) # .strip()
                     # else:
                     elif key in existing:
                         value = existing.get(key)
@@ -4402,11 +4208,12 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                             # as '.' denotes field/object boundary. Therefore all mustache
                             # given properties has to use '__' to indicated '.'
                             # props[key.replace(".", "__")] = str(value).strip()
-                            props[key] = str(value).strip()
+                            # TODO: Fix
+                            props[key] = str(value) # .strip()
                 except Exception as e:
                     self.logger.exception(' GremlinFS: all exception ', e)
 
-        return props
+        return props.tomap()
 
     def keys(self, prefix = None):
         return self.all(prefix).keys()
@@ -4417,7 +4224,7 @@ class GremlinFSNodeWrapper(GremlinFSBase):
     def set(self, key, value, prefix = None):
         pass
 
-    def get(self, key, default = None, prefix = None):
+    def get(self, key, _default_ = None, prefix = None):
 
         node = self.node
 
@@ -4428,15 +4235,15 @@ class GremlinFSNodeWrapper(GremlinFSBase):
 
         dsprefix = "ds"
         if prefix:
-            dsprefix = "ds.%s" % (prefix)
+            dsprefix = "ds." + prefix
 
         existing = None
-        if node.has(key = key, prefix = prefix):
-            existing = node.get(key = key, default = default, prefix = prefix)
+        if node.has(key, prefix):
+            existing = node.get(key, _default_, prefix)
 
         datasource = None
-        if node.has(key = key, prefix = dsprefix):
-            datasource = node.get(key = key, default = default, prefix = dsprefix)
+        if node.has(key, dsprefix):
+            datasource = node.get(key, _default_, dsprefix)
 
         prop = None
 
@@ -4447,7 +4254,8 @@ class GremlinFSNodeWrapper(GremlinFSBase):
                     self
                 )
                 if ret:
-                    prop = str(ret).strip()
+                    # TODO: Fix
+                    prop = str(ret) # .strip()
 
             except Exception as e:
                 self.logger.exception(' GremlinFS: get exception ', e)
@@ -4457,7 +4265,7 @@ class GremlinFSNodeWrapper(GremlinFSBase):
 
         return prop
 
-    def property(self, name, default = None, prefix = None):
+    def property(self, name, _default_ = None, prefix = None):
         pass
 
 
@@ -4467,18 +4275,18 @@ class GremlinFSUtils(GremlinFSBase):
     logger = GremlinFSLogger.getLogger("GremlinFSUtils")
 
     @classmethod
-    def missing(clazz, value):
+    def missing(self, value):
         if value:
             raise GremlinFSExistsError()
 
     @classmethod
-    def found(clazz, value):
+    def found(self, value):
         if not value:
             raise GremlinFSNotExistsError()
         return value
 
     @classmethod
-    def irepl(clazz, old, data, index = 0):
+    def irepl(self, old, data, index = 0):
 
         offset = index
 
@@ -4496,7 +4304,7 @@ class GremlinFSUtils(GremlinFSBase):
         if offset > len(old):
             return old
 
-        new = ""
+        _new_ = ""
 
         prefix = ""
         lprefix = 0
@@ -4520,27 +4328,31 @@ class GremlinFSUtils(GremlinFSBase):
             lsuffix = len(old)
 
         if lprefix > 0 and linfix > 0 and lsuffix > 0:
-            new = prefix + infix + suffix
+            _new_ = prefix + infix + suffix
         elif lprefix > 0 and linfix > 0:
-            new = prefix + infix
+            _new_ = prefix + infix
         elif linfix > 0 and lsuffix > 0:
-            new = infix + suffix
+            _new_ = infix + suffix
         else:
-            new = infix
+            _new_ = infix
 
-        return new
+        return _new_
 
     @classmethod
-    def link(clazz, path):
+    def link(self, path):
         pass
 
     @classmethod
-    def utils(clazz):
+    def utils(self):
         return GremlinFSUtils()
 
     def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            self.set(key, value)
+
+        # JS jump:
+        # ReferenceError: Must call super constructor in derived class before accessing 'this' or returning from derived constructor
+        super().__init__()
+
+        self.setall(kwargs)
 
     # 
 
@@ -4559,14 +4371,14 @@ class GremlinFSUtils(GremlinFSBase):
     def mqevent(self, event):
         return GremlinFS.operations().mqevent(event)
 
-    def query(self, query, node = None, default = None):
+    def query(self, query, node = None, _default_ = None):
         pass
 
-    def eval(self, command, node = None, default = None):
+    def eval(self, command, node = None, _default_ = None):
         pass
 
-    def config(self, key = None, default = None):
-        return GremlinFS.operations().config(key, default)
+    def config(self, key = None, _default_ = None):
+        return GremlinFS.operations().config(key, _default_)
 
     # def utils(self):
     #     return GremlinFS.operations().utils()
@@ -4596,71 +4408,27 @@ class GremlinFSUtils(GremlinFSBase):
                     nodename = node.get("name", None)
                     nodepath += "/" + nodename
 
-        return self.linkpath("%s" % (nodepath))
+        return self.linkpath(nodepath)
 
     def linkpath(self, path):
 
         if not path:
             return None
 
-        return "%s%s" % (self.config("mount_point"), path)
+        return self.config("mount_point") + path
 
     # 
 
     def tobytes(self, data):
-
-        if data:
-
-            # ensure that we have a string
-            try:
-
-                data = str(data)
-
-            except:
-                pass
-
-            try:
-
-                # convert to byte
-                data = data.encode(
-                    encoding='utf-8', 
-                    errors='strict'
-                )
-
-                return data
-
-            except:
-                return data
-
         return data
 
     def tostring(self, data):
-
-        if data:
-
-            try:
-
-                # convert to string
-                data = data.decode(
-                    encoding='utf-8', 
-                    errors='strict'
-                    )
-
-                return data
-
-            except:
-                return data
-
         return data
 
     def decode(self, data, encoding = "base64"):
-        import base64
-        data = base64.b64decode(data)
         return data
 
     def encode(self, data, encoding = "base64"):
-        import base64
-        data = base64.b64encode(data)
         return data
 
     def render(self, template, templatectx):
@@ -4677,23 +4445,16 @@ class GremlinFSUtils(GremlinFSBase):
         return elems
 
     def rematch(self, pattern, data):
-        import re
-        return re.match(pattern, data)
+        pass
 
     def recompile(self, pattern):
-        import re
-        return re.compile(pattern)
+        pass
 
     def genuuid(self, UUID = None):
-        import uuid
-        if UUID:
-            return uuid.UUID(UUID)
-        else:
-            return uuid.uuid1()
+        pass
 
     def gentime(self):
-        from time import time
-        return time()
+        pass
 
 
 
@@ -4702,6 +4463,11 @@ class GremlinFSEvent(GremlinFSBase):
     logger = GremlinFSLogger.getLogger("GremlinFSEvent")
 
     def __init__(self, **kwargs):
+
+        # JS jump:
+        # ReferenceError: Must call super constructor in derived class before accessing 'this' or returning from derived constructor
+        super().__init__()
+
         self.setall(kwargs)
 
     def toJSON(self):
@@ -4731,7 +4497,7 @@ class GremlinFSConfig(GremlinFSBase):
     logger = GremlinFSLogger.getLogger("GremlinFSConfig")
 
     @classmethod
-    def defaults(clazz):
+    def defaults(self):
         return {
             "mount_point": None,
 
@@ -4783,6 +4549,10 @@ class GremlinFSConfig(GremlinFSBase):
 
     def __init__(self, **kwargs):
 
+        # JS jump:
+        # ReferenceError: Must call super constructor in derived class before accessing 'this' or returning from derived constructor
+        super().__init__()
+
         # Defaults
         self.setall(GremlinFSConfig.defaults())
 
@@ -4817,13 +4587,13 @@ class GremlinFS():
     __instance = None
 
     @classmethod
-    def instance(clazz, instance = None):
+    def instance(self, instance = None):
         if instance:
             GremlinFS.__instance = instance
         return GremlinFS.__instance
 
     @classmethod
-    def operations(clazz):
+    def operations(self):
         return GremlinFS.__instance
 
     def __init__(
@@ -4906,262 +4676,49 @@ class GremlinFS():
         return self
 
     def connection(self, ro = False):
-
-        graph = Graph()
-
-        if ro:
-            strategy = ReadOnlyStrategy() # .build().create()
-            ro = graph.traversal().withStrategies(strategy).withRemote(DriverRemoteConnection(
-                self.gremlin_url,
-                'g',
-                username = self.gremlin_username,
-                password = self.gremlin_password
-            ))
-            return ro
-
-        g = graph.traversal().withRemote(DriverRemoteConnection(
-            self.gremlin_url,
-            'g',
-            username = self.gremlin_username,
-            password = self.gremlin_password
-        ))
-        return g
+        pass
 
     def mqconnection(self):
-
-        # url = 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/%2f'
-        #        amqp://rabbitmq:rabbitmq@rabbitmq:5672/%2f
-        url = "amqp://%s:%s@%s:%s/%s" % (
-            self.rabbitmq_username,
-            self.rabbitmq_password,
-            self.rabbitmq_host,
-            str(self.rabbitmq_port),
-            '%2f'
-        )
-
-        params = pika.URLParameters(url)
-        params.socket_timeout = 5
-
-        connection = pika.BlockingConnection(params) # Connect to CloudAMQP
-
-        return connection
+        pass
 
     def mqchannel(self):
-
-        mqconnection = self.mqconnection()
-        mqchannel = mqconnection.channel()
-        mqchannel.queue_declare(
-            queue = 'hello'
-        )
-
-        return mqchannel
+        pass
 
     def g(self):
-
-        if self._g:
-            return self._g
-
-        g = self.connection()
-        self._g = g
-
-        return self._g
+        pass
 
     def ro(self):
-
-        if self._ro:
-            return self._ro
-
-        ro = self.connection(True)
-        self._ro = ro
-
-        return self._ro
+        pass
 
     def a(self):
-        return __
+        pass
 
     def mq(self):
-
-        if self._mq:
-            return self._mq
-
-        mqchannel = self.mqchannel()
-        mqchannel.queue_declare(
-            queue = 'hello'
-        )
-
-        self._mq = mqchannel
-
-        return self._mq
+        pass
 
     def mqevent(self, event):
-
-        kwargs = event
-
-#         try:
-
-        # import json
-        import simplejson as json
-
-        data = {
-            "path": kwargs.get("path", {}).get("full", None),
-            "node": {},
-            "parent": {},
-            "event": event,
-            "property": kwargs.get("property", None),
-            "value": kwargs.get("value", None),
-            "mode": kwargs.get("mode", None),
-            "offset": kwargs.get("offset", None),
-            "encoding": kwargs.get("encoding", None),
-            "ine": kwargs.get("ine", None)
-        }
-
-        node = kwargs.get("node", None)
-        if node:
-            data["node"]["id"] = node.get("id", None)
-            data["node"]["uuid"] = node.get("uuid", None)
-            data["node"]["name"] = node.get("name", None)
-            data["node"]["label"] = node.get("label", None)
-
-        parent = kwargs.get("parent", None)
-        if parent:
-            data["parent"]["id"] = parent.get("id", None)
-            data["parent"]["uuid"] = parent.get("uuid", None)
-            data["parent"]["name"] = parent.get("name", None)
-            data["parent"]["label"] = parent.get("label", None)
-
-        self.logger.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT ')
-        self.logger.info(data)
-
-        try:
-
-            self.mq().basic_publish(
-                exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_id"),
-                body = json.dumps(
-                    data, 
-                    indent=4, 
-                    sort_keys=False
-                )
-            )
-
-        except pika.exceptions.ConnectionClosedByBroker:
-
-            self.logger.info(' GremlinFS: Outbound AMQP/RABBIT event, connection was closed, retry ')
-
-            self._mq = None
-
-            self.mq().basic_publish(
-                exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_id"),
-                body = json.dumps(
-                    data, 
-                    indent=4, 
-                    sort_keys=False
-                )
-            )
-
-        # Do not recover on channel errors
-        except pika.exceptions.AMQPChannelError as err:
-            self.logger.error(' GremlinFS: Outbound AMQP/RABBIT event error: {} '.format(err))
-            return
-
-        # Recover on all other connection errors
-        except pika.exceptions.AMQPConnectionError:
-
-            self.logger.info(' GremlinFS: Outbound AMQP/RABBIT event, connection was closed, retry ')
-
-            self._mq = None
-
-            self.mq().basic_publish(
-                exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_id"),
-                body = json.dumps(
-                    data, 
-                    indent=4, 
-                    sort_keys=False
-                )
-            )
-
-#         except Exception as e:
-#             self.logger.exception(' GremlinFS: MQ/AMQP send exception ', e)
+        pass
 
     def mqonevent(self, node, event, chain = [], data = {}, propagate = True):
-
-        self.logger.info(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT ')
-
-        try:
-
-            if node:
-                node.event(
-                    event = event, 
-                    chain = chain, 
-                    data = data, 
-                    propagate = True
-                )
-
-        except Exception as e:
-            self.logger.exception(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT EXCEPTION ', e)
+        pass
 
     def mqonmessage(self, ch, method, properties, body):
+        pass
 
-        self.logger.info(' GremlinFS: INBOUND AMQP/RABBIT ON MESSAGE ')
+    def query(self, query, node = None, _default_ = None):
+        pass
 
-        try:
+    def eval(self, command, node = None, _default_ = None):
+        pass
 
-            # import json
-            import simplejson as json
-
-            json = json.loads(body)
-
-            if "node" in json and "event" in json:
-                node = json.get("node", None)
-                event = json.get("event", None)
-                node = GremlinFSVertex.load(node.get("uuid", None))
-                self.mqonevent(
-                    node = node,
-                    event = event,
-                    chain = [],
-                    data = json,
-                    propagate = True
-                )
-
-        except Exception as e:
-            self.logger.exception(' GremlinFS: INBOUND AMQP/RABBIT ON MESSAGE EXCEPTION ', e)
-
-    def query(self, query, node = None, default = None):
-        return self.utils().query(query, node, default)
-
-    def eval(self, command, node = None, default = None):
-        return self.utils().eval(command, node, default)
-
-    def config(self, key = None, default = None):
-        return self._config.get(key, default)
+    def config(self, key = None, _default_ = None):
+        return self._config.get(key, _default_)
 
     def utils(self):
-        return GremlinFSUtils.utils()
-
-    # def initfs(self):
-    # 
-    #     newfs = GremlinFSVertex.make(
-    #         name = self.config("fs_root"),
-    #         label = ...,
-    #         uuid = None
-    #     ).createFolder(
-    #         parent = None,
-    #         mode = None
-    #     )
-
-    #     return newfs.get("id")
+        return self._utils
 
     def getfs(self, fsroot, fsinit = False):
-
-        fsid = fsroot
-
-        # if not ... and fsinit:
-        #     fs = None
-        #     fsid = self.initfs()
-
-        return fsid
+        return fsroot
 
     def defaultLabel(self):
         return "vertex"
@@ -5178,3 +4735,21 @@ class GremlinFS():
         if label == self.defaultFolderLabel():
             return True
         return False
+
+
+
+__all__ = [
+    'GremlinFSBase',
+    # 'GremlinFSMap',
+    'GremlinFSPath',
+    'GremlinFSNode',
+    'GremlinFSVertex',
+    'GremlinFSEdge',
+    'GremlinFSNodeWrapper',
+    'GremlinFSUtils',
+    'GremlinFSEvent',
+    'GremlinFSConfig',
+    'GremlinFS' 
+]
+
+__default__ = 'GremlinFS'

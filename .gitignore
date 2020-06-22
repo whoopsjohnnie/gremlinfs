@@ -8,4 +8,7 @@
 *._*
 .vagrant
 .log
+package-lock.json
 data/
+build/
+node_modules/

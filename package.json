@@ -1,0 +1,30 @@
+{
+  "name": "gremlinfs",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.8.4",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/polyfill": "^7.8.3",
+    "@babel/preset-env": "^7.8.4",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "cors": "^2.8.5",
+    "express": "^4.16.3",
+    "gremlin": "^3.4.6",
+    "nodemon": "^2.0.2",
+    "rimraf": "^3.0.2",
+    "uuid": "^7.0.2"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env"
+    ]
+  },
+  "scripts": {
+    "jump": "python3 -m metapensiero.pj ./src/py/gremlinfs/gremlinfslib.py -o ./src/js/gremlinfs/",
+    "build": "babel ./src/js/ --out-dir ./build/js/",
+    "transpile": "babel ./src/js/ --out-dir ./build/js/"
+  }
+}
