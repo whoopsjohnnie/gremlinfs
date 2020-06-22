@@ -3284,11 +3284,6 @@ class GremlinFSVertex(GremlinFSNode):
             pathuuid = self.utils().genuuid(UUID)
             pathtime = self.utils().gentime()
 
-            self.logger.error(' !! CREATE !! ')
-            self.logger.error(self.utils())
-            self.logger.error(pathuuid)
-            self.logger.error(pathtime)
-
             # txn = self.graph().tx()
 
             newnode = None
@@ -3538,7 +3533,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             for v in ps:
                 templatectxi = templatectx
-                haslabel = False;
+                haslabel = False
                 for v2 in v.objects:
                     if isinstance(v2, gremlin.structure.Vertex):
                         if haslabel:

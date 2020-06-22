@@ -146,7 +146,7 @@ class GremlinFSMap(GremlinFSObj):
         self.setall(kwargs);
 
     def __str__(self):
-        return str(self)
+        return str(self.getall())
 
     def frommap(self, map):
         self.setall(map)
