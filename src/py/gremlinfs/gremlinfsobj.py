@@ -92,6 +92,9 @@ class GremlinFSObj():
         if prefix:
             key = prefix + "." + key
         value = getattr(self, "_" + key, _default_)
+        # if isinstance(value, GremlinFSList):
+        #     return value.tolist()
+
         return value
 
 
@@ -104,11 +107,23 @@ class GremlinFSList():
     def __str__(self):
         return str(self._list)
 
+    def all(self):
+        return self._list
+
     def fromlist(self, list):
         self._list = list
 
     def tolist(self):
-        return self._list
+        ret = []
+        getall = self._list
+        for val in getall:
+            if isinstance(val, GremlinFSMap):
+                ret.append(val.tomap())
+            elif isinstance(val, GremlinFSList):
+                ret.append(val.tolist())
+            else:
+                ret.append(val)
+        return ret
 
     def append(self, item):
         self._list.append(item)
@@ -137,7 +152,17 @@ class GremlinFSMap(GremlinFSObj):
         self.setall(map)
 
     def tomap(self):
-        return self.getall()
+        ret = {}
+        getall = self.getall()
+        for key in getall:
+            val = getall[key]
+            if isinstance(val, GremlinFSMap):
+                ret[key] = val.tomap()
+            elif isinstance(val, GremlinFSList):
+                ret[key] = val.tolist()
+            else:
+                ret[key] = val
+        return ret
 
     def update(self, map):
         self.setall(map)

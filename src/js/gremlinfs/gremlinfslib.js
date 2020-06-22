@@ -1818,14 +1818,14 @@ class GremlinFSVertex extends GremlinFSNode {
             this.logger.exception(" GremlinFS: readNode template exception ", e);
         }
         try {
-            ps = new GremlinFS.operations().g().V(node.get("id")).emit().repeat(GremlinFS.operations().a().outE().inV()).until(GremlinFS.operations().a().outE().count().is(0).or().loops().is(P.gt(10))).path().toList();
-            vs = GremlinFSVertex.fromVs(new GremlinFS.operations().g().V(node.get("id")).emit().repeat(GremlinFS.operations().a().outE().inV()).until(GremlinFS.operations().a().outE().count().is(0).or().loops().is(P.gt(10))));
-            vs2 = {};
+            ps = new GremlinFS.operations().g().V(node.get("id")).emit().repeat(GremlinFS.operations().a().inE().outV()).until(GremlinFS.operations().a().inE().count().is(0).or().loops().is(P.gt(10))).path().toList();
+            vs = GremlinFSVertex.fromVs(new GremlinFS.operations().g().V(node.get("id")).emit().repeat(GremlinFS.operations().a().inE().outV()).until(GremlinFS.operations().a().inE().count().is(0).or().loops().is(P.gt(10))));
+            vs2 = gfsmap({});
             for (var v, _pj_c = 0, _pj_a = vs, _pj_b = _pj_a.length; (_pj_c < _pj_b); _pj_c += 1) {
                 v = _pj_a[_pj_c];
-                vs2[v.get("id")] = v;
+                vs2.set(v.get("id"), v);
             }
-            templatectx = vs2[node.get("id")].all();
+            templatectx = gfsmap(vs2.get(node.get("id")).all());
             templatectxi = templatectx;
             for (var v, _pj_c = 0, _pj_a = ps, _pj_b = _pj_a.length; (_pj_c < _pj_b); _pj_c += 1) {
                 v = _pj_a[_pj_c];
@@ -1837,7 +1837,7 @@ class GremlinFSVertex extends GremlinFSNode {
                     if ((v2 instanceof Vertex)) {
                         if (haslabel) {
                             found = null;
-                            for (var ctemplatectxi, _pj_i = 0, _pj_g = templatectxi, _pj_h = _pj_g.length; (_pj_i < _pj_h); _pj_i += 1) {
+                            for (var ctemplatectxi, _pj_i = 0, _pj_g = templatectxi.all(), _pj_h = _pj_g.length; (_pj_i < _pj_h); _pj_i += 1) {
                                 ctemplatectxi = _pj_g[_pj_i];
                                 if ((ctemplatectxi.get("id") === v2id)) {
                                     found = ctemplatectxi;
@@ -1846,27 +1846,27 @@ class GremlinFSVertex extends GremlinFSNode {
                             if (found) {
                                 templatectxi = found;
                             } else {
-                                templatectxi.push(vs2[v2id].all());
-                                templatectxi = templatectxi.slice((- 1))[0];
+                                templatectxi.append(gfsmap(vs2.get(v2id).all()));
+                                templatectxi = templatectxi.all().slice((- 1))[0];
                             }
                         }
                     } else {
                         if ((v2 instanceof Edge)) {
                             haslabel = true;
-                            if (_pj.in_es6(v2.label, templatectxi)) {
+                            if (templatectxi.has(v2.label)) {
                             } else {
-                                templatectxi[v2.label] = [];
+                                templatectxi.set(v2.label, gfslist([]));
                             }
-                            templatectxi = templatectxi[v2.label];
+                            templatectxi = templatectxi.get(v2.label);
                         }
                     }
                 }
             }
             if (template) {
-                data = this.utils().render(template, templatectx);
+                data = this.utils().render(template, templatectx.tomap());
             } else {
                 if (readfn) {
-                    data = readfn(node, templatectx, data);
+                    data = readfn(node, templatectx.tomap(), data);
                 }
             }
         } catch(e) {

@@ -3529,11 +3529,11 @@ class GremlinFSVertex(GremlinFSNode):
                 GremlinFS.operations().a().inE().count().is_(0).or_().loops().is_(P.gt(10))
             ))
 
-            vs2 = {}
+            vs2 = gfsmap({})
             for v in vs:
-                vs2[v.get('id')] = v
+                vs2.set(v.get('id'), v)
 
-            templatectx = vs2[ node.get('id') ].getall()
+            templatectx = gfsmap(vs2.get(node.get('id')).all())
             templatectxi = templatectx
 
             for v in ps:
@@ -3542,39 +3542,39 @@ class GremlinFSVertex(GremlinFSNode):
                 for v2 in v.objects:
                     if isinstance(v2, gremlin.structure.Vertex):
                         if haslabel:
-                            found = undefined;
-                            for ctemplatectxi in templatectxi:
-                                if ctemplatectxi.id == v2.id:
-                                    found = ctemplatectxi; # templatectxi[iii]
+                            found = None
+                            for ctemplatectxi in templatectxi.all():
+                                if ctemplatectxi.get('id') == v2id:
+                                    found = ctemplatectxi
 
                             if found:
                                 templatectxi = found
 
                             else:
-                                templatectxi.append(vs2[v2id].all())
-                                templatectxi = templatectxi[-1]
+                                templatectxi.append(gfsmap(vs2.get(v2id).all()))
+                                templatectxi = templatectxi.all()[-1]
 
-                    elif isinstance(v2, gremlin.structure.Edge):
-                        haslabel = true
-                        if v2.label in templatectxi:
+                    elif isinstance(v2, Edge):
+                        haslabel = True
+                        if templatectxi.has(v2.label):
                             pass
                         else:
-                            templatectxi[v2.label] = []
+                            templatectxi.set(v2.label, gfslist([]))
 
-                        templatectxi = templatectxi[v2.label];
+                        templatectxi = templatectxi.get(v2.label)
 
             if template:
 
                 data = self.utils().render(
                     template,
-                    templatectx
+                    templatectx.tomap()
                 )
 
             elif readfn:
 
                 data = readfn(
                     node,
-                    templatectx,
+                    templatectx.tomap(),
                     data
                 )
 
