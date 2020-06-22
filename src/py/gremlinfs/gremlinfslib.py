@@ -3498,7 +3498,8 @@ class GremlinFSVertex(GremlinFSNode):
                 templatectxi = templatectx
                 haslabel = False
                 for v2 in v.objects:
-                    if isinstance(v2, gremlin.structure.Vertex):
+                    v2id = (v2.id)['@value']
+                    if isinstance(v2, Vertex):
                         if haslabel:
                             found = None
                             for ctemplatectxi in templatectxi.all():
