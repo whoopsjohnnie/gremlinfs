@@ -9,3 +9,4 @@ simplejson
 flatten_json
 PyYAML
 pystache
+addict
