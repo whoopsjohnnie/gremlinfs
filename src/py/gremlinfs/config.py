@@ -75,7 +75,12 @@ gremlinfs = dict(
     log_level = logging.INFO,
 
     mq_exchange = 'gfs-exchange',
+    mq_exchange_type = 'topic',
+    # mq_queue = 'gfs-queue',
+    mq_routing_key = "gfs1.info",
+    mq_routing_keys = ["gfs1.*"],
 
+    client_id = "0010",
     fs_ns = "gfs1",
     fs_root = None,
     fs_root_init = False,

@@ -70,24 +70,65 @@ def amqp_rcve(operations = None):
 
     while(reconnect):
 
+        mqexchangename = operations.config("mq_exchange")
+        mqexchangetype = operations.config("mq_exchange_type")
+
+        mqqueuename = operations.config("client_id") + '-' + operations.config("fs_ns")
+
+        mqroutingkeys = operations.config("mq_routing_keys")
+        mqroutingkey = operations.config("mq_routing_key")
+
+        logging.info( ' GremlinFS: AMQP DETAILS: ' )
+        logging.info( ' GremlinFS: MQ EXCHANGE NAME: ' + mqexchangename + ", TYPE: " + mqexchangetype )
+        logging.info( ' GremlinFS: MQ QUEUE NAME: ' + mqqueuename )
+        logging.info( ' GremlinFS: MQ ROUTING KEYS: ' )
+        logging.info(mqroutingkeys)
+        logging.info( ' GremlinFS: MQ DEFAULT ROUTING KEY: ' + mqroutingkey )
+
         try:
-            logging.info(' GremlinFS: Connecting to AMQP ')
+            logging.info(
+                ' GremlinFS: Connecting to AMQP: queue: ' + 
+                mqqueuename + 
+                ' with exchange: ' + 
+                mqexchangetype + '/' + mqexchangename)
 
             mqconnection = operations.mqconnection()
             mqchannel = mqconnection.channel()
-
-            mqchannel.queue_declare(
-                queue = operations.config("fs_ns")
+            mqchannel.exchange_declare(
+                exchange = mqexchangename,
+                exchange_type = mqexchangetype,
             )
-
+            mqchannel.queue_declare(
+                queue = mqqueuename
+            )
+            routing_keys = mqroutingkeys
+            for routing_key in routing_keys:
+                logging.info(
+                    ' GremlinFS: Binding AMQP queue: ' + 
+                    mqqueuename + 
+                    ' in exchange: ' + 
+                    mqexchangetype + '/' + mqexchangename + 
+                    ' with routing key: ' + routing_key)
+                mqchannel.queue_bind(
+                    exchange = mqexchangename,
+                    queue = mqqueuename,
+                    routing_key = routing_key
+                )
+            logging.info(
+                ' GremlinFS: Setting up AMQP queue consumer: ' + 
+                mqqueuename)
             mqchannel.basic_consume(
-                queue = operations.config("fs_ns"),
+                queue = mqqueuename,
                 auto_ack = True,
                 on_message_callback = operations.mqonmessage
             )
-
+            logging.info(
+                ' GremlinFS: Consuming AMQP queue: ' + 
+                mqqueuename)
             mqchannel.start_consuming()
-
+            logging.info(
+                ' GremlinFS: Exit, closing AMQP queue: ' + 
+                mqqueuename)
             mqconnection.close()
 
         except pika.exceptions.ConnectionClosedByBroker:
@@ -996,8 +1037,8 @@ class GremlinFSPath(GremlinFSBase):
             parent = self.parent()
 
             # Do not create an A vertex in /V/B, unless A is vertex
-            if label != "vertex":
-                if label != newlabel:
+            if newlabel != "vertex":
+                if newlabel != newlabel:
                     raise FuseOSError(errno.ENOENT)
 
             if not newname:
@@ -4735,8 +4776,9 @@ class GremlinFSOperations(Operations):
 
         mqconnection = self.mqconnection()
         mqchannel = mqconnection.channel()
-        mqchannel.queue_declare(
-            queue = 'hello'
+        mqchannel.exchange_declare(
+            exchange = self.config("mq_exchange"),
+            exchange_type = self.config("mq_exchange_type"),
         )
 
         return mqchannel
@@ -4767,49 +4809,42 @@ class GremlinFSOperations(Operations):
             return self._mq
 
         mqchannel = self.mqchannel()
-        mqchannel.queue_declare(
-            queue = 'hello'
-        )
-
         self._mq = mqchannel
 
         return self._mq
 
     def mqevent(self, event, **kwargs):
 
-#         try:
-
-        # import json
         import simplejson as json
 
+        # data = event.toJSON()
+
         data = {
-            "event": event
+           "event": kwargs.get("event")
         }
 
-        node = kwargs.get("node", None)
-        if node:
-            data["node"] = node.all()
+        if "node" in kwargs and kwargs.get("node"):
+            data["node"] = kwargs.get("node").all()
 
-        link = kwargs.get("link", None)
-        if link:
-            data["link"] = link.all()
+        # This one fails to serialize
+        # if "link" in kwargs and kwargs.get("link"):
+        #     data["link"] = kwargs.get("link").all()
 
-        source = kwargs.get("source", None)
-        if source:
-            data["source"] = source.all()
+        if "source" in kwargs and kwargs.get("source"):
+            data["source"] = kwargs.get("source").all()
 
-        target = kwargs.get("target", None)
-        if target:
-            data["target"] = target.all()
+        if "target" in kwargs and kwargs.get("target"):
+            data["target"] = kwargs.get("target").all()
 
-        logging.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT ')
+        logging.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT: routing: ' + self.config("mq_routing_key") + ' @ exchange: ' + self.config("mq_exchange"))
+        logging.info(' event: ')
         logging.info(data)
 
         try:
 
             self.mq().basic_publish(
-                exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_ns"),
+                exchange = self.config("mq_exchange"),
+                routing_key = self.config("mq_routing_key"),
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -4824,8 +4859,8 @@ class GremlinFSOperations(Operations):
             self._mq = None
 
             self.mq().basic_publish(
-                exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_ns"),
+                exchange = self.config("mq_exchange"),
+                routing_key = self.config("mq_routing_key"),
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -4846,8 +4881,8 @@ class GremlinFSOperations(Operations):
             self._mq = None
 
             self.mq().basic_publish(
-                exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_ns"),
+                exchange = self.config("mq_exchange"),
+                routing_key = self.config("mq_routing_key"),
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -4855,11 +4890,12 @@ class GremlinFSOperations(Operations):
                 )
             )
 
-#         except:
-#             logging.error(' GremlinFS: MQ/AMQP send exception ')
-#             traceback.print_exc()
+        except:
+            logging.error(' GremlinFS: MQ/AMQP send exception ')
+            traceback.print_exc()
 
     def mqonevent(self, node, event, chain = [], data = {}, propagate = True):
+
         logging.info(' GremlinFS: INBOUND AMQP/RABBIT ON EVENT ')
 
         try:
@@ -4934,9 +4970,13 @@ class GremlinFSOperations(Operations):
             "rabbitmq_password": self.rabbitmq_password,
 
             "mq_exchange": GremlinFSUtils.conf('mq_exchange', 'gfs-exchange'),
+            "mq_exchange_type": GremlinFSUtils.conf('mq_exchange_type', 'topic'),
+            "mq_routing_key": GremlinFSUtils.conf('mq_routing_key', 'gfs1.info'),
+            "mq_routing_keys": GremlinFSUtils.conf('mq_routing_keys', ['gfs1.*']),
 
             "log_level": GremlinFSUtils.conf('log_level', logging.DEBUG),
 
+            "client_id": GremlinFSUtils.conf('client_id', "0010"),
             "fs_ns": GremlinFSUtils.conf('fs_ns', "gfs1"),
             "fs_root": self.getfs(
                 GremlinFSUtils.conf('fs_root', None),

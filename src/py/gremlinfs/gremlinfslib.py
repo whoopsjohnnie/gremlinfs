@@ -905,8 +905,8 @@ class GremlinFSPath(GremlinFSBase):
             parent = self.parent()
 
             # Do not create an A vertex in /V/B, unless A is vertex
-            if label != "vertex":
-                if label != newlabel:
+            if newlabel != "vertex":
+                if newlabel != newlabel:
                     raise GremlinFSNotExistsError(self)
 
             if not newname:
@@ -4743,9 +4743,13 @@ class GremlinFSConfig(GremlinFSBase):
             "rabbitmq_password": None,
 
             "mq_exchange": 'gfs-exchange',
+            "mq_exchange_type": 'topic',
+            "mq_routing_key": "gfs1.info",
+            "mq_routing_keys": ["gfs1.*"],
 
             "log_level": GremlinFSLogger.getLogLevel(),
 
+            "client_id": "0010",
             "fs_ns": "gfs1",
             "fs_root": None,
             "fs_root_init": False,
@@ -4945,8 +4949,9 @@ class GremlinFS():
 
         mqconnection = self.mqconnection()
         mqchannel = mqconnection.channel()
-        mqchannel.queue_declare(
-            queue = 'hello'
+        mqchannel.exchange_declare(
+            exchange = self.config("mq_exchange"),
+            exchange_type = self.config("mq_exchange_type"),
         )
 
         return mqchannel
@@ -4980,10 +4985,6 @@ class GremlinFS():
             return self._mq
 
         mqchannel = self.mqchannel()
-        mqchannel.queue_declare(
-            queue = 'hello'
-        )
-
         self._mq = mqchannel
 
         return self._mq
@@ -5001,8 +5002,8 @@ class GremlinFS():
         try:
 
             self.mq().basic_publish(
-                exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_id"),
+                exchange = self.config("mq_exchange"),
+                routing_key = self.config("mq_routing_key"),
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -5017,8 +5018,8 @@ class GremlinFS():
             self._mq = None
 
             self.mq().basic_publish(
-                exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_id"),
+                exchange = self.config("mq_exchange"),
+                routing_key = self.config("mq_routing_key"),
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -5039,8 +5040,8 @@ class GremlinFS():
             self._mq = None
 
             self.mq().basic_publish(
-                exchange = self.config("mq_exchange"), # 'gfs-exchange',
-                routing_key = self.config("fs_id"),
+                exchange = self.config("mq_exchange"),
+                routing_key = self.config("mq_routing_key"),
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -5048,8 +5049,8 @@ class GremlinFS():
                 )
             )
 
-#         except Exception as e:
-#             self.logger.exception(' GremlinFS: MQ/AMQP send exception ', e)
+        except Exception as e:
+            self.logger.exception(' GremlinFS: MQ/AMQP send exception ', e)
 
     def mqonevent(self, node, event, chain = [], data = {}, propagate = True):
 
