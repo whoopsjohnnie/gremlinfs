@@ -210,7 +210,9 @@ class GremlinFSPath(GremlinFSBase):
 
         else:
             nodes = GremlinFSVertex.fromVs(
-                GremlinFS.operations().g().V().where(
+                GremlinFS.operations().g().V().has(
+                    'namespace', GremlinFS.operations().config("fs_ns")
+                ).where(
                     GremlinFS.operations().a().out(
                         GremlinFS.operations().config("in_label", "in")
                     ).count().is_(0)
@@ -996,7 +998,9 @@ class GremlinFSPath(GremlinFSBase):
 
             else:
                 nodes = GremlinFSVertex.fromVs(
-                    self.g().V().where(
+                    self.g().V().has(
+                        'namespace', self.config("fs_ns")
+                    ).where(
                         GremlinFS.operations().a().out(
                             self.config("in_label")
                         ).count().is_(0)
@@ -4265,7 +4269,9 @@ class GremlinFSVertex(GremlinFSNode):
 
         if not node:
             return GremlinFSVertex.fromMaps(
-                self.g().V().where(
+                self.g().V().has(
+                    'namespace', self.config("fs_ns")
+                ).where(
                     GremlinFS.operations().a().out(
                         self.config("in_label")
                     ).count().is_(0)
@@ -4276,6 +4282,8 @@ class GremlinFSVertex(GremlinFSNode):
             return GremlinFSVertex.fromMaps(
                 self.g().V(
                     node.get("id")
+                ).has(
+                    'namespace', self.config("fs_ns")
                 ).inE(
                     self.config("in_label")
                 ).outV().valueMap(True).toList()
