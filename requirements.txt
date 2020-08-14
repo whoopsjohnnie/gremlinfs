@@ -1,0 +1,12 @@
+
+future
+futures
+fusepy==3.0.1
+# gremlinpython==3.3.0
+gremlinpython==3.3.7
+pika==1.1.0
+simplejson
+flatten_json
+PyYAML
+pystache
+addict

@@ -1,0 +1,30 @@
+FROM theiaide/theia:latest
+
+USER root
+
+RUN apk update
+
+# Install python
+RUN apk add --update \
+    python3 \
+    python3-dev \
+    py-pip \
+    build-base \
+  && pip install virtualenv \
+  && rm -rf /var/cache/apk/*
+
+# Install FUSE
+RUN apk add --update \
+	sudo \
+    sshfs \
+    fuse-dev
+
+ADD ./ /app
+
+WORKDIR /app
+
+# Addl. python 
+# RUN pip install -r ./requirements.txt
+RUN pip3 install -r ./requirements.txt
+
+ENTRYPOINT ["/app/bin/bootstrap.sh"]

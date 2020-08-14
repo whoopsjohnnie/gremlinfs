@@ -1,0 +1,43 @@
+version: '3'
+services:
+
+  orientdb:
+    # image: orientdb:3.0.21-tp3
+    build:
+      context: ./
+      dockerfile: Dockerfile.orientdb
+    command: server.sh
+    volumes:
+      # - ./config/orientdb/config:/orientdb/config
+      - ./config/orientdb/config/gremlin-server.yaml:/orientdb/config/gremlin-server.yaml
+      - ./data/orientdb/databases:/orientdb/databases
+    environment:
+      ORIENTDB_ROOT_PASSWORD: root
+    hostname: "orientdb"
+    networks:
+      - gremlinfs
+    ports:
+      - 2424:2424
+      - 2480:2480
+      - 8182:8182
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    environment:
+      RABBITMQ_DEFAULT_USER: "rabbitmq"
+      RABBITMQ_DEFAULT_PASS: "rabbitmq"
+      RABBITMQ_DEFAULT_VHOST: "/"
+      RABBITMQ_LOG_BASE: "/var/log/rabbitmq"
+    hostname: "rabbitmq"
+    networks:
+      - gremlinfs
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    labels:
+      NAME: "rabbitmq"
+
+networks:
+  gremlinfs: 
+    external:
+      name: gremlinfs
