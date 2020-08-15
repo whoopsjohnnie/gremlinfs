@@ -4902,6 +4902,9 @@ class GremlinFS():
 
         self._utils = GremlinFSUtils()
 
+        # register
+        self.register()
+
         return self
 
     def connection(self, ro = False):
@@ -5129,6 +5132,94 @@ class GremlinFS():
         #     fsid = self.initfs()
 
         return fsid
+
+    def register(self):
+
+        import socket
+        import platform
+
+        client_id = self.config("client_id")
+        namespace = self.config("fs_ns")
+        type_name = "register"
+
+        hostname = socket.gethostname()
+        ipaddr = socket.gethostbyname(hostname)
+
+        # hwaddr = hex(uuid.getnode())
+        hwaddr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff) for ele in range(0,8*6,8)][::-1]).upper()
+
+        exists = False
+        node = None
+
+        try:
+
+            match = GremlinFSVertex.fromVs(
+                self.g().V().hasLabel(
+                    type_name
+                ).has(
+                    'namespace', namespace
+                ).has(
+                    'name', client_id + "@" + hostname
+                ).has(
+                    'hw_address', hwaddr
+                )
+            )
+
+            if match:
+                exists = True
+                node = match[0]
+
+            else:
+                exists = False
+                node = None
+
+        except Exception as e:
+            self.logger.exception(' GremlinFS: Failed to register ', e)
+            exists = False
+
+        try:
+
+            if not exists:
+
+                pathuuid = uuid.uuid1()
+                pathtime = time()
+
+                self.g().addV(
+                    type_name
+                ).property(
+                    'name', client_id + "@" + hostname
+                ).property(
+                    'uuid', str(pathuuid)
+                ).property(
+                    'namespace', namespace
+                ).property(
+                    'created', int(pathtime)
+                ).property(
+                    'modified', int(pathtime)
+                ).property(
+                    'client_id', client_id
+                ).property(
+                    'hostname', hostname
+                ).property(
+                    'ip_address', ipaddr
+                ).property(
+                    'hw_address', hwaddr
+                ).property(
+                    'machine_architecture', platform.processor()
+                ).property(
+                    'machine_hardware', platform.machine()
+                ).property(
+                    'system_name', platform.system()
+                ).property(
+                    'system_release', platform.release()
+                ).property(
+                    'system_version', platform.version()
+                ).next()
+
+        except Exception as e:
+            self.logger.exception(' GremlinFS: Failed to register ', e)
+
+        return node
 
     def defaultLabel(self):
         return "vertex"
