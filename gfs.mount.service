@@ -1,0 +1,13 @@
+[Unit]
+Description=gfsmount
+
+[Service]
+# User=root
+RestartSec=1
+Type=forking
+TimeoutStartSec=0
+Restart=always
+ExecStart=/gremlinfs/systemd_start_gremlinfs.sh 
+
+[Install]
+WantedBy=multi-user.target
