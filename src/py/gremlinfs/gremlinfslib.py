@@ -843,7 +843,7 @@ class GremlinFSPath(GremlinFSBase):
     # 
 
 
-    def createFolder(self, mode = None):
+    def createFolder(self):
 
         if self.isFound():
             raise GremlinFSExistsError(self)
@@ -876,8 +876,7 @@ class GremlinFSPath(GremlinFSBase):
                 label = newlabel,
                 uuid = newuuid
             ).createFolder(
-                parent = parent,
-                mode = mode
+                parent = parent
             )
 
             self.mqevent(GremlinFSEvent(
@@ -918,8 +917,7 @@ class GremlinFSPath(GremlinFSBase):
                     label = newlabel,
                     uuid = newuuid
                 ).createFolder(
-                    parent = None,
-                    mode = mode
+                    parent = None
                 )
 
                 self.mqevent(GremlinFSEvent(
@@ -933,8 +931,7 @@ class GremlinFSPath(GremlinFSBase):
                     label = newlabel,
                     uuid = newuuid
                 ).create(
-                    parent = None,
-                    mode = mode
+                    parent = None
                 )
 
                 self.mqevent(GremlinFSEvent(
@@ -1198,7 +1195,7 @@ class GremlinFSPath(GremlinFSBase):
     # 
 
 
-    def createFile(self, mode = None, data = None):
+    def createFile(self, data = None):
 
         if self.isFound():
             raise GremlinFSExistsError(self)
@@ -1233,8 +1230,7 @@ class GremlinFSPath(GremlinFSBase):
                 label = newlabel,
                 uuid = newuuid
             ).create(
-                parent = parent,
-                mode = mode
+                parent = parent
             )
 
             self.mqevent(GremlinFSEvent(
@@ -1362,7 +1358,7 @@ class GremlinFSPath(GremlinFSBase):
     # 
 
 
-    def createLink(self, sourcematch, mode = None):
+    def createLink(self, sourcematch):
 
         if self.isFound():
             raise GremlinFSExistsError(self)
@@ -1436,8 +1432,7 @@ class GremlinFSPath(GremlinFSBase):
             newlink = source.createLink(
                 target = target,
                 label = label,
-                name = name,
-                mode = mode
+                name = name
             )
 
             self.mqevent(GremlinFSEvent(
@@ -1471,8 +1466,7 @@ class GremlinFSPath(GremlinFSBase):
             newlink = source.createLink(
                 target = target,
                 label = label,
-                name = name,
-                mode = mode
+                name = name
             )
 
             self.mqevent(GremlinFSEvent(
@@ -3460,7 +3454,7 @@ class GremlinFSVertex(GremlinFSNode):
             raise GremlinFSNotExistsError(self)
         return node
 
-    def create(self, parent = None, mode = None, owner = None, group = None, namespace = None):
+    def create(self, parent = None, namespace = None):
 
         node = self
 
@@ -3468,17 +3462,8 @@ class GremlinFSVertex(GremlinFSNode):
         label = node.get('label', None)
         name = node.get('name', None)
 
-        if not name:
-            return None
-
-        if not mode:
-            mode = GremlinFS.operations().config("default_mode", 0o644)
-
-        if not owner:
-            owner = GremlinFS.operations().config("default_uid", 0)
-
-        if not group:
-            group = GremlinFS.operations().config("default_gid", 0)
+        # if not name:
+        #     return None
 
         if not namespace:
             namespace = GremlinFS.operations().config("fs_ns")
@@ -3490,6 +3475,16 @@ class GremlinFSVertex(GremlinFSNode):
             pathuuid = self.utils().genuuid(UUID)
             pathtime = self.utils().gentime()
 
+            checknodes = self.g().V().has(
+                'uuid', str(pathuuid)
+            ).toList()
+
+            if checknodes and len(checknodes) > 0:
+                return None
+
+            if not name:
+                name = str(pathuuid)[0:8]
+
             # txn = self.graph().tx()
 
             newnode = None
@@ -3499,6 +3494,15 @@ class GremlinFSVertex(GremlinFSNode):
                 )
             else:
                 newnode = self.g().addV()
+
+            for key in node.all():
+                if key != "id" and \
+                   key != "uuid" and \
+                   key != "label" and \
+                   key != "name" and \
+                   key != "namespace": 
+                    val = node.get(key)
+                    newnode.property(key, val)
 
             newnode.property(
                 'name', name
@@ -3510,12 +3514,6 @@ class GremlinFSVertex(GremlinFSNode):
                 'created', int(pathtime)
             ).property(
                 'modified', int(pathtime)
-            ).property(
-                'mode', mode
-            ).property(
-                'owner', owner
-            ).property(
-                'group', group
             )
 
             if parent:
@@ -3790,7 +3788,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         return data
 
-    def createFolder(self, parent = None, mode = None, owner = None, group = None, namespace = None):
+    def createFolder(self, parent = None, namespace = None):
 
         node = self
 
@@ -3804,19 +3802,10 @@ class GremlinFSVertex(GremlinFSNode):
         if not label:
             label = GremlinFS.operations().defaultFolderLabel()
 
-        if not mode:
-            mode = GremlinFS.operations().config("default_mode", 0o644)
-
-        if not owner:
-            owner = GremlinFS.operations().config("default_uid", 0)
-
-        if not group:
-            group = GremlinFS.operations().config("default_gid", 0)
-
         if not namespace:
             namespace = GremlinFS.operations().config("fs_ns")
 
-        newfolder = self.create(parent = parent, mode = mode, owner = owner, group = group, namespace = namespace)
+        newfolder = self.create(parent = parent, namespace = namespace)
 
         try:
 
@@ -3865,7 +3854,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         return newfolder
 
-    def createLink(self, target, label, name = None, mode = None, owner = None, group = None):
+    def createLink(self, target, label, name = None):
 
         source = self
 
@@ -3877,15 +3866,6 @@ class GremlinFSVertex(GremlinFSNode):
 
         if not label:
             return None
-
-        if not mode:
-            mode = GremlinFS.operations().config("default_mode", 0o644)
-
-        if not owner:
-            owner = GremlinFS.operations().config("default_uid", 0)
-
-        if not group:
-            group = GremlinFS.operations().config("default_gid", 0)
 
         newedge = None
 
@@ -4229,32 +4209,72 @@ class GremlinFSEdge(GremlinFSNode):
 
         return None
 
-    @classmethod
-    def fromMap(clazz, map):
-        node = GremlinFSEdge()
-        node.fromobj(map)
-        return node
+#     @classmethod
+#     def fromMap(clazz, map):
+#         node = GremlinFSEdge()
+#         node.fromobj(map)
+#         return node
+# 
+#     @classmethod
+#     def fromMaps(clazz, maps):
+#         nodes = gfslist([])
+#         for map in maps:
+#             node = GremlinFSEdge()
+#             node.fromobj(map)
+#             nodes.append(node)
+#         return nodes.tolist()
 
-    @classmethod
-    def fromMaps(clazz, maps):
-        nodes = gfslist([])
-        for map in maps:
-            node = GremlinFSEdge()
-            node.fromobj(map)
-            nodes.append(node)
-        return nodes.tolist()
+#     @classmethod
+#     def fromE(clazz, e):
+#         return GremlinFSEdge.fromMap(
+#             e.valueMap(True).next()
+#         )
+# 
+#     @classmethod
+#     def fromEs(clazz, es):
+#         return GremlinFSEdge.fromMaps(
+#             es.valueMap(True).toList()
+#         )
 
     @classmethod
     def fromE(clazz, e):
-        return GremlinFSEdge.fromMap(
-            e.valueMap(True).next()
-        )
+        # var clazz;
+        # clazz = this;
+        obj = e.next();
+        # if obj and obj['value']:
+        #     obj = obj['value']
+
+        edge = GremlinFSEdge();
+        edge.set('id', obj.id['@value']);
+        edge.set('label', obj.label);
+        edge.set('outV', obj.outV.id['@value']);
+        # edge.set('outV', obj.outV.id);
+        # edge.set('outVLabel', obj.outV.label);
+        edge.set('inV', obj.inV.id['@value']);
+        # edge.set('inV', obj.inV.id);
+        # edge.set('inVLabel', obj.inV.label);
+        return edge;
 
     @classmethod
     def fromEs(clazz, es):
-        return GremlinFSEdge.fromMaps(
-            es.valueMap(True).toList()
-        )
+        # var clazz;
+        # clazz = this;
+        edges = gfslist([]);
+        objs2 = es.toList();
+        # for( var i=0; i<objs2.length; i++ ) {
+        #     var obj = objs2[i];
+        for obj in objs2:
+            edge = GremlinFSEdge();
+            edge.set('id', obj.id['@value']);
+            edge.set('label', obj.label);
+            edge.set('outV', obj.outV.id['@value']);
+            # edge.set('outV', obj.outV.id);
+            # edge.set('outVLabel', obj.outV.label);
+            edge.set('inV', obj.inV.id['@value']);
+            # edge.set('inV', obj.inV.id);
+            # edge.set('inVLabel', obj.inV.label);
+            edges.append(edge);
+        return edges.tolist();
 
     def node(self, inv = True):
 
@@ -5117,8 +5137,7 @@ class GremlinFS():
     #         label = ...,
     #         uuid = None
     #     ).createFolder(
-    #         parent = None,
-    #         mode = None
+    #         parent = None
     #     )
 
     #     return newfs.get("id")
