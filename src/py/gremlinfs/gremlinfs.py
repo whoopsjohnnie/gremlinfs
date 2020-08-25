@@ -1003,7 +1003,8 @@ class GremlinFSPath(GremlinFSBase):
                 raise FuseOSError(errno.ENOENT)
 
             parent = self.parent()
-            newfolder = GremlinFSVertex.make(
+            # newfolder = 
+            GremlinFSVertex.make(
                 name = newname,
                 label = newlabel,
                 uuid = newuuid
@@ -1012,10 +1013,10 @@ class GremlinFSPath(GremlinFSBase):
                 mode = mode
             )
 
-            self.mqevent(
-                event = "create_node",
-                node = newfolder
-            )
+#             self.mqevent(
+#                 event = "create_node",
+#                 node = newfolder
+#             )
 
             return True
 
@@ -1045,7 +1046,8 @@ class GremlinFSPath(GremlinFSBase):
                 raise FuseOSError(errno.ENOENT)
 
             if GremlinFS.operations().isFolderLabel(newlabel):
-                newfolder = GremlinFSVertex.make(
+                # newfolder = 
+                GremlinFSVertex.make(
                     name = newname,
                     label = newlabel,
                     uuid = newuuid
@@ -1054,13 +1056,14 @@ class GremlinFSPath(GremlinFSBase):
                     mode = mode
                 )
 
-                self.mqevent(
-                    event = "create_node",
-                    node = newfolder
-                )
+#                 self.mqevent(
+#                     event = "create_node",
+#                     node = newfolder
+#                 )
 
             else:
-                newfile = GremlinFSVertex.make(
+                # newfile = 
+                GremlinFSVertex.make(
                     name = newname,
                     label = newlabel,
                     uuid = newuuid
@@ -1069,10 +1072,10 @@ class GremlinFSPath(GremlinFSBase):
                     mode = mode
                 )
 
-                self.mqevent(
-                    event = "create_node",
-                    node = newfile
-                )
+#                 self.mqevent(
+#                     event = "create_node",
+#                     node = newfile
+#                 )
 
             return True
 
@@ -1343,7 +1346,8 @@ class GremlinFSPath(GremlinFSBase):
             if not newname:
                 raise FuseOSError(errno.ENOENT)
 
-            newfile = GremlinFSVertex.make(
+            # newfile = 
+            GremlinFSVertex.make(
                 name = newname,
                 label = newlabel,
                 uuid = newuuid
@@ -1352,10 +1356,10 @@ class GremlinFSPath(GremlinFSBase):
                 mode = mode
             )
 
-            self.mqevent(
-                event = "create_node",
-                node = newfile
-            )
+#             self.mqevent(
+#                 event = "create_node",
+#                 node = newfile
+#             )
 
             return True
 
@@ -1384,10 +1388,10 @@ class GremlinFSPath(GremlinFSBase):
                 data
             )
 
-            self.mqevent(
-                event = "update_node",
-                node = node
-            )
+#             self.mqevent(
+#                 event = "update_node",
+#                 node = node
+#             )
 
             return True
 
@@ -1514,19 +1518,20 @@ class GremlinFSPath(GremlinFSBase):
 
             # Create link from source to target
             # Inbound means source=target and target=source
-            newlink = source.createLink(
+            # newlink = 
+            source.createLink(
                 target = target,
                 label = label,
                 name = name,
                 mode = mode
             )
 
-            self.mqevent(
-                event = "create_link",
-                link = newlink,
-                source = source,
-                target = target
-            )
+#             self.mqevent(
+#                 event = "create_link",
+#                 link = newlink,
+#                 source = source,
+#                 target = target
+#             )
 
             return True
 
@@ -1549,19 +1554,20 @@ class GremlinFSPath(GremlinFSBase):
 
             # Create link from source to target
             # Outbound means source=source and target=target
-            newlink = source.createLink(
+            # newlink = 
+            source.createLink(
                 target = target,
                 label = label,
                 name = name,
                 mode = mode
             )
 
-            self.mqevent(
-                event = "create_link",
-                link = newlink,
-                source = source,
-                target = target
-            )
+#             self.mqevent(
+#                 event = "create_link",
+#                 link = newlink,
+#                 source = source,
+#                 target = target
+#             )
 
             return True
 
@@ -1700,11 +1706,11 @@ class GremlinFSPath(GremlinFSBase):
 
             if label and name:
                 # we are the target, in edge means ...
-                link = node.getLink(
-                    label = label,
-                    name = name,
-                    ine = True
-                )
+#                 link = node.getLink(
+#                     label = label,
+#                     name = name,
+#                     ine = True
+#                 )
 
                 node.deleteLink(
                     label = label,
@@ -1712,18 +1718,18 @@ class GremlinFSPath(GremlinFSBase):
                     ine = True
                 )
 
-                self.mqevent(
-                    event = "delete_link",
-                    link = link
-                )
+#                 self.mqevent(
+#                     event = "delete_link",
+#                     link = link
+#                 )
 
             elif label:
                 # we are the target, in edge means ...
-                link = node.getLink(
-                    label = label,
-                    name = None,
-                    ine = True
-                )
+#                 link = node.getLink(
+#                     label = label,
+#                     name = None,
+#                     ine = True
+#                 )
 
                 node.deleteLink(
                     label = label,
@@ -1731,10 +1737,10 @@ class GremlinFSPath(GremlinFSBase):
                     ine = True
                 )
 
-                self.mqevent(
-                    event = "delete_link",
-                    link = link
-                )
+#                 self.mqevent(
+#                     event = "delete_link",
+#                     link = link
+#                 )
 
             return True
 
@@ -1751,11 +1757,11 @@ class GremlinFSPath(GremlinFSBase):
 
             if label and name:
                 # we are the target, out edge means ...
-                link = node.getLink(
-                    label = label,
-                    name = name,
-                    ine = False
-                )
+#                 link = node.getLink(
+#                     label = label,
+#                     name = name,
+#                     ine = False
+#                 )
 
                 node.deleteLink(
                     label = label,
@@ -1763,18 +1769,18 @@ class GremlinFSPath(GremlinFSBase):
                     ine = False
                 )
 
-                self.mqevent(
-                    event = "delete_link",
-                    link = link
-                )
+#                 self.mqevent(
+#                     event = "delete_link",
+#                     link = link
+#                 )
 
             elif label:
                 # we are the target, out edge means ...
-                link = node.getLink(
-                    label = label,
-                    name = None,
-                    ine = False
-                )
+#                 link = node.getLink(
+#                     label = label,
+#                     name = None,
+#                     ine = False
+#                 )
 
                 node.deleteLink(
                     label = label,
@@ -1782,10 +1788,10 @@ class GremlinFSPath(GremlinFSBase):
                     ine = False
                 )
 
-                self.mqevent(
-                    event = "delete_link",
-                    link = link
-                )
+#                 self.mqevent(
+#                     event = "delete_link",
+#                     link = link
+#                 )
 
             return True
 
@@ -1917,10 +1923,10 @@ class GremlinFSPath(GremlinFSBase):
                 encoding = "base64"
             )
 
-            self.mqevent(
-                event = "update_node",
-                node = node
-            )
+#             self.mqevent(
+#                 event = "update_node",
+#                 node = node
+#             )
 
             try:
 
@@ -1981,10 +1987,10 @@ class GremlinFSPath(GremlinFSBase):
                 new
             )
 
-            self.mqevent(
-                event = "update_node",
-                node = node
-            )
+#             self.mqevent(
+#                 event = "update_node",
+#                 node = node
+#             )
 
             return data
 
@@ -2027,10 +2033,10 @@ class GremlinFSPath(GremlinFSBase):
                 ""
             )
 
-            self.mqevent(
-                event = "update_node",
-                node = node
-            )
+#             self.mqevent(
+#                 event = "update_node",
+#                 node = node
+#             )
 
             return None
 
@@ -2060,10 +2066,10 @@ class GremlinFSPath(GremlinFSBase):
                 ""
             )
 
-            self.mqevent(
-                event = "update_node",
-                node = node
-            )
+#             self.mqevent(
+#                 event = "update_node",
+#                 node = node
+#             )
 
             return None
 
@@ -2108,10 +2114,10 @@ class GremlinFSPath(GremlinFSBase):
             node.rename(newmatch._name)
             node.move(parent)
 
-            self.mqevent(
-                event = "update_node",
-                node = node
-            )
+#             self.mqevent(
+#                 event = "update_node",
+#                 node = node
+#             )
 
             return True
 
@@ -2153,10 +2159,10 @@ class GremlinFSPath(GremlinFSBase):
                 data
             )
 
-            self.mqevent(
-                event = "update_node",
-                node = newnode
-            )
+#             self.mqevent(
+#                 event = "update_node",
+#                 node = newnode
+#             )
 
             newdata = newnode.readProperty(
                 newname,
@@ -2169,10 +2175,10 @@ class GremlinFSPath(GremlinFSBase):
                     oldname
                 )
 
-                self.mqevent(
-                    event = "update_node",
-                    node = oldnode
-                )
+#                 self.mqevent(
+#                     event = "update_node",
+#                     node = oldnode
+#                 )
 
             return True
 
@@ -2214,10 +2220,10 @@ class GremlinFSPath(GremlinFSBase):
             node = GremlinFSUtils.found(self.node())
             node.delete()
 
-            self.mqevent(
-                event = "delete_node",
-                node = node
-            )
+#             self.mqevent(
+#                 event = "delete_node",
+#                 node = node
+#             )
 
             return True
 
@@ -2246,10 +2252,10 @@ class GremlinFSPath(GremlinFSBase):
                 self._vertexproperty
             )
 
-            self.mqevent(
-                event = "update_node",
-                node = node
-            )
+#             self.mqevent(
+#                 event = "update_node",
+#                 node = node
+#             )
 
             return True
 
@@ -2286,10 +2292,10 @@ class GremlinFSPath(GremlinFSBase):
                     value
                 )
 
-            self.mqevent(
-                event = "update_node",
-                node = node
-            )
+#             self.mqevent(
+#                 event = "update_node",
+#                 node = node
+#             )
 
         return True
 
@@ -2520,6 +2526,11 @@ class GremlinFSNode(GremlinFSBase):
         ).next()
         # )
 
+        self.mqevent(
+            event = "update_node",
+            node = node
+        )
+
         return data
 
     def unsetProperty(self, name, prefix = None):
@@ -2537,16 +2548,22 @@ class GremlinFSNode(GremlinFSBase):
             name = "%s.%s" % (prefix, name)
 
         # Having issues with exception throwing, even though deletion works
+        # next() throws errors on delete
         try:
             # GremlinFSVertex.fromV(
             self.g().V(
                 nodeid
             ).properties(
                 name
-            ).drop().next()
+            ).drop().toList() # .next()
             # )
         except:
-            pass
+            logging.error(' GremlinFS: unsetProperty exception ')
+
+        self.mqevent(
+            event = "update_node",
+            node = node
+        )
 
     def setProperties(self, properties, prefix = None):
 
@@ -3027,10 +3044,9 @@ class GremlinFSVertex(GremlinFSNode):
 
     @classmethod
     def fromV(clazz, v):
-        node = GremlinFSVertex.fromMap(
+        return GremlinFSVertex.fromMap(
             v.valueMap(True).next()
         )
-        return node
 
     @classmethod
     def fromVs(clazz, vs):
@@ -3605,6 +3621,11 @@ class GremlinFSVertex(GremlinFSNode):
 
             # self.graph().tx().commit()
 
+            self.mqevent(
+                event = "create_node",
+                node = newnode
+            )
+
         except:
             logging.error(' GremlinFS: create exception ')
             traceback.print_exc()
@@ -3643,6 +3664,11 @@ class GremlinFSVertex(GremlinFSNode):
                 traceback.print_exc()
                 return None
 
+        self.mqevent(
+            event = "update_node",
+            node = node
+        )
+
         try:
 
             newnode = GremlinFSVertex.fromV(
@@ -3673,19 +3699,20 @@ class GremlinFSVertex(GremlinFSNode):
         newnode = None
 
         # drop() on edges often/always? throw exceptions?
+        # next() throws errors on delete
         try:
 
-            newnode = GremlinFSVertex.fromV(
-                self.g().V(
-                    node.get("id")
-                ).has(
-                    'namespace', self.config("fs_ns")
-                ).outE(
-                    self.config("in_label")
-                ).has(
-                    'name', self.config("in_name")
-                ).drop()
-            )
+            # newnode = GremlinFSVertex.fromV(
+            self.g().V(
+                node.get("id")
+            ).has(
+                'namespace', self.config("fs_ns")
+            ).outE(
+                self.config("in_label")
+            ).has(
+                'name', self.config("in_name")
+            ).drop().toList()
+            # )
 
         except:
             pass
@@ -3715,6 +3742,11 @@ class GremlinFSVertex(GremlinFSNode):
                 traceback.print_exc()
                 return None
 
+        self.mqevent(
+            event = "update_node",
+            node = node
+        )
+
         try:
 
             newnode = GremlinFSVertex.fromV(
@@ -3741,16 +3773,22 @@ class GremlinFSVertex(GremlinFSNode):
 
         try:
 
+            # next() throws errors on delete
             self.g().V(
                 node.get("id")
             ).has(
                 'namespace', self.config("fs_ns")
-            ).drop().next()
+            ).drop().toList() # .next()
 
         except:
-            # logging.error(' GremlinFS: delete exception ')
-            # traceback.print_exc()
+            logging.error(' GremlinFS: delete exception ')
+            traceback.print_exc()
             return False
+
+        self.mqevent(
+            event = "delete_node",
+            node = node
+        )
 
         return True
 
@@ -3970,7 +4008,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             if name:
 
-                newnode = GremlinFSVertex.fromV(
+                newedge = GremlinFSEdge.fromE(
                     self.g().V(
                         source.get("id")
                     ).addE(
@@ -3986,7 +4024,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             else:
 
-                newnode = GremlinFSVertex.fromV(
+                newedge = GremlinFSEdge.fromE(
                     self.g().V(
                         source.get("id")
                     ).addE(
@@ -3997,6 +4035,13 @@ class GremlinFSVertex(GremlinFSNode):
                         target.get("id")
                     ))
                 )
+
+            self.mqevent(
+                event = "create_link",
+                link = newedge,
+                source = source,
+                target = target
+            )
 
         except:
             logging.error(' GremlinFS: createLink exception ')
@@ -4076,54 +4121,64 @@ class GremlinFSVertex(GremlinFSNode):
         if not label:
             return None
 
-        newnode = None
+        link = node.getLink(
+            label = label,
+            name = name,
+            ine = ine
+        )
 
         # drop() on edges often/always? throw exceptions?
+        # next() throws errors on delete
         try:
 
             if name:
 
                 if ine:
-                    newnode = GremlinFSVertex.fromV(
-                        self.g().V(
-                            node.get("id")
-                        ).inE(
-                            label
-                        ).has(
-                            'name', name
-                        ).drop()
-                    )
+                    # GremlinFSVertex.fromV(
+                    self.g().V(
+                        node.get("id")
+                    ).inE(
+                        label
+                    ).has(
+                        'name', name
+                    ).drop().toList()
+                    # )
 
                 else:
-                    newnode = GremlinFSVertex.fromV(
-                        self.g().V(
-                            node.get("id")
-                        ).outE(
-                            label
-                        ).has(
-                            'name', name
-                        ).drop()
-                    )
+                    # GremlinFSVertex.fromV(
+                    self.g().V(
+                        node.get("id")
+                    ).outE(
+                        label
+                    ).has(
+                        'name', name
+                    ).drop().toList()
+                    # )
 
             else:
 
                 if ine:
-                    newnode = GremlinFSVertex.fromV(
-                        self.g().V(
-                            node.get("id")
-                        ).inE(
-                            label
-                        ).drop()
-                    )
+                    # GremlinFSVertex.fromV(
+                    self.g().V(
+                        node.get("id")
+                    ).inE(
+                        label
+                    ).drop().toList()
+                    # )
 
                 else:
-                    newnode = GremlinFSVertex.fromV(
-                        self.g().V(
-                            node.get("id")
-                        ).outE(
-                            label
-                        ).drop()
-                    )
+                    # GremlinFSVertex.fromV(
+                    self.g().V(
+                        node.get("id")
+                    ).outE(
+                        label
+                    ).drop().toList()
+                    # )
+
+            self.mqevent(
+                event = "delete_link",
+                link = link
+            )
 
         except:
             pass
@@ -4268,6 +4323,27 @@ class GremlinFSEdge(GremlinFSNode):
                 # logging.error(' GremlinFS: node exception ')
                 # traceback.print_exc()
                 return None
+
+    def delete(self):
+
+        node = self
+
+        if not node:
+            return None
+
+        # next() throws errors on delete
+        try:
+
+            self.g().E(
+                node.get("id")
+            ).drop().toList() # .next()
+
+        except:
+            logging.error(' GremlinFS: delete exception ')
+            traceback.print_exc()
+            return False
+
+        return True
 
 
 
@@ -4729,6 +4805,9 @@ class GremlinFSOperations(Operations):
 
         self._config = None
 
+        # register
+        self.register()
+
         return self
 
     def connection(self, ro = False):
@@ -4774,14 +4853,116 @@ class GremlinFSOperations(Operations):
 
     def mqchannel(self):
 
+        mqexchangename = self.config("mq_exchange")
+        mqexchangetype = self.config("mq_exchange_type")
+
+        mqqueuename = self.config("client_id") + '-' + self.config("fs_ns")
+
+        mqroutingkeys = self.config("mq_routing_keys")
+        mqroutingkey = self.config("mq_routing_key")
+
+        logging.info( ' GremlinFS: AMQP DETAILS: ' )
+        logging.info( ' GremlinFS: MQ EXCHANGE NAME: ' + mqexchangename + ", TYPE: " + mqexchangetype )
+        logging.info( ' GremlinFS: MQ QUEUE NAME: ' + mqqueuename )
+        logging.info( ' GremlinFS: MQ ROUTING KEYS: ' )
+        logging .info(mqroutingkeys)
+        if mqroutingkey:
+            logging.info( ' GremlinFS: MQ DEFAULT ROUTING KEY: ' + mqroutingkey )
+
         mqconnection = self.mqconnection()
         mqchannel = mqconnection.channel()
         mqchannel.exchange_declare(
-            exchange = self.config("mq_exchange"),
-            exchange_type = self.config("mq_exchange_type"),
+            exchange = mqexchangename,
+            exchange_type = mqexchangetype,
         )
 
         return mqchannel
+
+    def mqlistener(self, mqdetails = {}, callback = None, reconnect = True):
+
+        while(reconnect):
+
+            mqexchangename = mqdetails["mq_exchange"]
+            mqexchangetype = mqdetails["mq_exchange_type"]
+
+            mqqueuename = mqdetails["mq_queue"]
+
+            mqroutingkeys = mqdetails["mq_routing_keys"]
+            mqroutingkey = mqdetails["mq_routing_key"]
+
+            logging.info( ' GremlinFS: AMQP DETAILS: ' )
+            logging.info( ' GremlinFS: MQ EXCHANGE NAME: ' + mqexchangename + ", TYPE: " + mqexchangetype )
+            logging.info( ' GremlinFS: MQ QUEUE NAME: ' + mqqueuename )
+            logging.info( ' GremlinFS: MQ ROUTING KEYS: ' )
+            logging.info(mqroutingkeys)
+            if mqroutingkey:
+                logging.info( ' GremlinFS: MQ DEFAULT ROUTING KEY: ' + mqroutingkey )
+
+            try:
+                logging.info(
+                    ' GremlinFS: Connecting to AMQP: queue: ' + 
+                    mqqueuename + 
+                    ' with exchange: ' + 
+                    mqexchangetype + '/' + mqexchangename)
+
+                mqconnection = self.mqconnection()
+                mqchannel = mqconnection.channel()
+                mqchannel.exchange_declare(
+                    exchange = mqexchangename,
+                    exchange_type = mqexchangetype
+                )
+                mqchannel.queue_declare(
+                    queue = mqqueuename
+                )
+                routing_keys = mqroutingkeys
+                for routing_key in routing_keys:
+                    logging.info(
+                        ' GremlinFS: Binding AMQP queue: ' + 
+                        mqqueuename + 
+                        ' in exchange: ' + 
+                        mqexchangetype + '/' + mqexchangename + 
+                        ' with routing key: ' + routing_key)
+                    mqchannel.queue_bind(
+                        exchange = mqexchangename,
+                        queue = mqqueuename,
+                        routing_key = routing_key
+                    )
+                logging.info(
+                    ' GremlinFS: Setting up AMQP queue consumer: ' + 
+                    mqqueuename)
+                mqchannel.basic_consume(
+                    queue = mqqueuename,
+                    auto_ack = True,
+                    on_message_callback = callback
+                )
+                logging.info(
+                    ' GremlinFS: Consuming AMQP queue: ' + 
+                    mqqueuename)
+                mqchannel.start_consuming()
+                logging.info(
+                    ' GremlinFS: Exit, closing AMQP queue: ' + 
+                    mqqueuename)
+                mqconnection.close()
+
+            except pika.exceptions.ConnectionClosedByBroker:
+                # Uncomment this to make the example not attempt recovery
+                # from server-initiated connection closure, including
+                # when the node is stopped cleanly
+                #
+                # break
+                time.sleep(10)
+                continue
+
+            # Do not recover on channel errors
+            except pika.exceptions.AMQPChannelError as err:
+                logging.error(' GremlinFS: Caught an AMQP connection error: {} '.format(err))
+                break
+
+            # Recover on all other connection errors
+            except pika.exceptions.AMQPConnectionError:
+                logging.info(' GremlinFS: AMQP connection was closed, reconnecting ')
+                time.sleep(10)
+                continue
 
     def g(self):
 
@@ -4836,15 +5017,31 @@ class GremlinFSOperations(Operations):
         if "target" in kwargs and kwargs.get("target"):
             data["target"] = kwargs.get("target").all()
 
-        logging.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT: routing: ' + self.config("mq_routing_key") + ' @ exchange: ' + self.config("mq_exchange"))
+        mqexchangename = self.config("mq_exchange")
+        mqexchangetype = self.config("mq_exchange_type")
+
+        mqqueuename = self.config("client_id") + '-' + self.config("fs_ns")
+
+        mqroutingkeys = self.config("mq_routing_keys")
+        mqroutingkey = self.config("mq_routing_key")
+
+        logging.info( ' GremlinFS: AMQP DETAILS: ' )
+        logging.info( ' GremlinFS: MQ EXCHANGE NAME: ' + mqexchangename + ", TYPE: " + mqexchangetype )
+        logging.info( ' GremlinFS: MQ QUEUE NAME: ' + mqqueuename )
+        logging.info( ' GremlinFS: MQ ROUTING KEYS: ' )
+        logging.info(mqroutingkeys)
+        if mqroutingkey:
+            logging.info( ' GremlinFS: MQ DEFAULT ROUTING KEY: ' + mqroutingkey )
+            logging.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT: routing: ' + mqroutingkey + ' @ exchange: ' + mqexchangename)
+
         logging.info(' event: ')
         logging.info(data)
 
         try:
 
             self.mq().basic_publish(
-                exchange = self.config("mq_exchange"),
-                routing_key = self.config("mq_routing_key"),
+                exchange = mqexchangename,
+                routing_key = mqroutingkey,
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -4859,8 +5056,8 @@ class GremlinFSOperations(Operations):
             self._mq = None
 
             self.mq().basic_publish(
-                exchange = self.config("mq_exchange"),
-                routing_key = self.config("mq_routing_key"),
+                exchange = mqexchangename,
+                routing_key = mqroutingkey,
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -4881,8 +5078,8 @@ class GremlinFSOperations(Operations):
             self._mq = None
 
             self.mq().basic_publish(
-                exchange = self.config("mq_exchange"),
-                routing_key = self.config("mq_routing_key"),
+                exchange = mqexchangename,
+                routing_key = mqroutingkey,
                 body = json.dumps(
                     data, 
                     indent=4, 
@@ -5053,6 +5250,96 @@ class GremlinFSOperations(Operations):
         #     fsid = self.initfs()
 
         return fsid
+
+    def register(self):
+
+        import socket
+        import platform
+
+        client_id = self.config("client_id")
+        namespace = self.config("fs_ns")
+        type_name = "register"
+
+        hostname = socket.gethostname()
+        ipaddr = socket.gethostbyname(hostname)
+
+        # hwaddr = hex(uuid.getnode())
+        hwaddr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff) for ele in range(0,8*6,8)][::-1]).upper()
+
+        exists = False
+        node = None
+
+        try:
+
+            match = GremlinFSVertex.fromVs(
+                self.g().V().hasLabel(
+                    type_name
+                ).has(
+                    'namespace', namespace
+                ).has(
+                    'name', client_id + "@" + hostname
+                ).has(
+                    'hw_address', hwaddr
+                )
+            )
+
+            if match:
+                exists = True
+                node = match[0]
+
+            else:
+                exists = False
+                node = None
+
+        except:
+            logging.error(' GremlinFS: Failed to register ')
+            traceback.print_exc()
+            exists = False
+
+        try:
+
+            if not exists:
+
+                pathuuid = uuid.uuid1()
+                pathtime = time()
+
+                self.g().addV(
+                    type_name
+                ).property(
+                    'name', client_id + "@" + hostname
+                ).property(
+                    'uuid', str(pathuuid)
+                ).property(
+                    'namespace', namespace
+                ).property(
+                    'created', int(pathtime)
+                ).property(
+                    'modified', int(pathtime)
+                ).property(
+                    'client_id', client_id
+                ).property(
+                    'hostname', hostname
+                ).property(
+                    'ip_address', ipaddr
+                ).property(
+                    'hw_address', hwaddr
+                ).property(
+                    'machine_architecture', platform.processor()
+                ).property(
+                    'machine_hardware', platform.machine()
+                ).property(
+                    'system_name', platform.system()
+                ).property(
+                    'system_release', platform.release()
+                ).property(
+                    'system_version', platform.version()
+                ).next()
+
+        except:
+            logging.error(' GremlinFS: Failed to register ')
+            traceback.print_exc()
+
+        return node
 
     def defaultLabel(self):
         return "vertex"
