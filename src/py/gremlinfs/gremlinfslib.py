@@ -2325,6 +2325,21 @@ class GremlinFSNode(GremlinFSBase):
             nodes.append(clazz(**vals))
         return nodes
 
+    @classmethod
+    def fromVal(clazz, val = [], names = []):
+        vals = clazz.vals(map)
+        return clazz(**vals)
+
+    @classmethod
+    def fromVals(clazz, vals = [], names = []):
+        nodes = []
+        for val in vals:
+            vals = {}
+            for i, name in enumerate(names):
+                vals[name] = val[i]
+            nodes.append(clazz(**vals))
+        return nodes
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             self.set(key, value)
@@ -2984,16 +2999,30 @@ class GremlinFSVertex(GremlinFSNode):
         return None
 
     @classmethod
-    def fromV(clazz, v):
-        return GremlinFSVertex.fromMap(
-            v.valueMap(True).next()
-        )
+    def fromV(clazz, v, names = []):
+        if names:
+            # return GremlinFSVertex.fromVal(
+            return GremlinFSVertex.fromMap(
+                v.valueMap(*names).next()
+            )
+
+        else:
+            return GremlinFSVertex.fromMap(
+                v.valueMap(True).next()
+            )
 
     @classmethod
-    def fromVs(clazz, vs):
-        return GremlinFSVertex.fromMaps(
-            vs.valueMap(True).toList()
-        )
+    def fromVs(clazz, vs, names = []):
+        if names:
+            # return GremlinFSVertex.fromVals(
+            return GremlinFSVertex.fromMaps(
+                vs.valueMap(*names).toList()
+            )
+
+        else:
+            return GremlinFSVertex.fromMaps(
+                vs.valueMap(True).toList()
+            )
 
     def edges(self, edgeid = None, ine = True):
 
