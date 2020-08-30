@@ -2568,156 +2568,171 @@ class GremlinFSNode(GremlinFSBase):
     def writeProperty(self, name, data, encoding = None, prefix = None):
         return self.setProperty(name, data, encoding = encoding, prefix = prefix)
 
-    def invoke(self, handler, event, chain = [], data = {}):
+    def invoke(self, script, handler, context = {}):
 
         import subprocess
+        import tempfile
 
         node = self
 
+        nodepath = self.utils().nodelink(node)
+        handlerpath = self.utils().nodelink(handler)
+
+        nodecontext = node.context()
+        handlercontext = handler.context()
+
         try:
 
-            path = data.get("path", None)
-            property = data.get("property", None)
-            value = data.get("value", None)
-
-            if node and handler:
-
-                handlercwd = "%s/%s/vertex/%s" % (
-                    self.config("mount_point"),
-                    self.config("vertex_folder"),
-                    node.get("uuid")
-                )
-
-                handlerpath = "%s/%s/vertex/%s/%s" % (
-                    self.config("mount_point"),
-                    self.config("vertex_folder"),
-                    node.get("uuid"),
-                    handler
-                )
+            if node and handlerpath:
 
                 env = {}
 
-                cwd = handlercwd
-                args = [handlerpath]
+                env["EVENT"] = context.get("event", None)
 
                 if node:
+                    env["NODE_ID"] = node.get("id", None)
+                    env["NODE_UUID"] = node.get("uuid", None)
+                    env["NODE_NAME"] = node.get("name", None)
+                    env["NODE_LABEL"] = node.get("label", None)
+                    env["NODE_PATH"] = nodepath
 
-                    env["UUID"] = node.get("uuid", None)
-                    args.append("-i")
-                    args.append(node.get("uuid", None))
-
-                    env["NAME"] = node.get("name", None)
-                    args.append("-n")
-                    args.append(node.get("name", None))
-
-                if event:
-
-                    env["EVENT"] = event
-                    args.append("-e")
-                    args.append(event)
-
-                if property:
-
-                    env["PROPERTY"] = property
-                    args.append("-k")
-                    args.append(property)
-
-                if value:
-
-                    env["VALUE"] = value
-                    args.append("-v")
-                    args.append(value)
-
-                nodes = {}
-                chainnodes = []
-                if chain and len(chain) > 0:
-                    for elem in chain:
-
-                        chainelem = {}
-                        # chaininnode = None
-                        # chaininnode = None
-                        chainoutnodew = None
-                        chainoutnodew = None
-                        chainlink = None
-                        chainlinkw = None
-
-                        if "innode" in elem:
-                            # chaininnode = elem.get('innode', None)
-                            # chaininnodew = GremlinFSNodeWrapper(
-                            #     node = chaininnode
-                            # )
-                            # chainelem["node"] = chaininnodew
-                            pass
-
-                        if "outnode" in elem:
-                            chainoutnode = elem.get('outnode', None)
-                            chainoutnodew = GremlinFSNodeWrapper(
-                                node = chainoutnode
-                            )
-                            chainelem["node"] = chainoutnodew
-
-                        if "link" in elem:
-                            chainlink = elem.get('link', None)
-                            chainlinkw = GremlinFSNodeWrapper(
-                                node = chainlink
-                            )
-                            chainelem["link"] = chainlinkw
-
-                        if chainoutnodew and chainlink and chainlink.has("name") and chainlink.has("label"):
-                            nodes["%s@%s" % (chainlink.get("name"), chainlink.get("label"))] = chainoutnodew
-
-                        elif chainoutnodew and chainlink and chainlink.has("name"):
-                            nodes[chainlink.get("name")] = chainoutnodew
-
-                        elif chainoutnodew and chainlink and chainlink.has("label"):
-                            nodes[chainlink.get("label")] = chainoutnodew
-
-                        chainnodes.append(chainelem)
-
-                data = node.getProperty(handler, default = None, encoding = None, prefix = None)
-
-                script = data
+                if handler:
+                    env["HANDLER_ID"] = node.get("id", None)
+                    env["HANDLER_UUID"] = node.get("uuid", None)
+                    env["HANDLER_NAME"] = node.get("name", None)
+                    env["HANDLER_LABEL"] = node.get("label", None)
+                    env["HANDLER_PATH"] = handlerpath
 
                 try:
 
-                    template = data
+                    template = script
                     if template:
 
-                        import pystache
-                        renderer = pystache.Renderer()
+                        templatectx = context
 
-                        templatectx = {
-                            "event": event,
-                            "property": property,
-                            "value": value,
-                            "self": GremlinFSNodeWrapper(
-                                node = node
-                            ),
-                            # "node": ...,
-                            "nodes": nodes,
-                            "chain": chainnodes
-                        }
+                        templatectx["node"] = nodecontext
+                        templatectx["nodepath"] = nodepath
 
-                        for idx, chainnode in enumerate(chainnodes):
-                            templatectx["chain%d" % (idx)] = chainnode
+                        templatectx["handler"] = handlercontext
+                        templatectx["handlerpath"] = handlerpath
 
-                        script = pystache.render(
-                            template, templatectx
+                        script = self.utils().render(
+                            template,
+                            templatectx
                         )
 
                 except Exception as e:
                     self.logger.exception(' GremlinFS: invoke handler render exception ', e)
-                    script = data
 
-                executable = "sh"
-                subprocess.call(
+                executable = "/bin/sh"
+                cwd = tempfile.gettempdir()
+
+                self.logger.info(' GremlinFS: invoking event handler with env ')
+                self.logger.info(executable)
+                self.logger.info(script)
+                self.logger.info(cwd)
+                self.logger.info(env)
+
+                # subprocess.call(
+                calloutput = subprocess.check_output(
                     [executable, '-c', script],
                     cwd = cwd,
                     env = env
                 )
 
+            return calloutput
+
         except Exception as e:
-            self.logger.exception(' GremlinFS: node invoke exception ')
+            self.logger.exception(' GremlinFS: node invoke exception ', e)
+
+    def handlers(self):
+
+        register = GremlinFS.operations().register()
+
+        eventdetails = {}
+
+        events = []
+        handlers = []
+
+        try:
+            # GremlinFS.instance().a().label()
+            # GremlinFS.instance().a().id()
+            events = GremlinFS.instance().g().V(
+                register.get("id")
+            ).out("subscribesto").as_(
+                "eventid"
+            ).as_(
+                "event"
+            ).out("instanceof").hasLabel("type").as_(
+                "eventtypename"
+            ).in_("publishes").hasLabel("type").as_(
+                "typename"
+            ).select("eventid", "event", "typename").by(
+                GremlinFS.instance().a().id()
+            ).by("event").by("name").dedup().toList()
+        except Exception as e:
+            self.logger.exception(' GremlinFS: get handlers exception ', e)
+            events = []
+
+        try:
+            # GremlinFS.instance().a().label()
+            # GremlinFS.instance().a().id()
+            handlers = GremlinFS.instance().g().V(
+                register.get("id")
+            ).out("subscribesto").as_(
+                "eventid"
+            ).out("handledby").hasLabel("handler").as_(
+                "handlername"
+            ).as_(
+                "handlerid"
+            ).select("eventid", "handlerid").by(
+                GremlinFS.instance().a().id()
+            ).by(
+                GremlinFS.instance().a().id()
+            ).dedup().toList()
+        except Exception as e:
+            self.logger.exception(' GremlinFS: get handlers exception ', e)
+            handlers = []
+
+        for event in events:
+            try:
+                if "eventid" in event and "event" in event:
+                    eventdetails[ event.get("eventid")["@value"] ] = {
+                        "type": event.get("typename"),
+                        "event": event.get("event"),
+                        "handler": None,
+                    }
+            except Exception as e:
+                pass
+
+        for handler in handlers:
+            try:
+                if "eventid" in handler and "handlerid" in handler:
+                    eventdetails[ handler.get("eventid")["@value"] ]["handler"] = handler.get("handlerid")["@value"]
+            except Exception as e:
+                pass
+
+        return eventdetails.values()
+
+    def handler(self, event):
+
+        node = self
+
+        handlers = self.handlers()
+        for handler in handlers:
+            if "type" in handler and "event" in handler and "handler" in handler:
+                if handler.get("type") and handler.get("event") and handler.get("handler"):
+                    if handler.get("type") == node.get("label") and handler.get("event") == event:
+                        handlernode = GremlinFSVertex.load( handler.get("handler") )
+                        if handlernode:
+                            self.logger.info(' GremlinFS: get event handler, found matching handler for event ')
+                            self.logger.info(event)
+                            self.logger.info(handlernode.all())
+                            return handlernode
+
+        self.logger.info(' GremlinFS: get event handler, found no handler for event ')
+        self.logger.info(event)
+        return None
 
     def event(self, event, chain = [], data = {}, propagate = True):
 
@@ -2725,24 +2740,56 @@ class GremlinFSNode(GremlinFSBase):
 
         try:
 
-            property = data.get("property", None)
-            value = data.get("value", None)
+            _property = data.get("property", None)
+            # value = data.get("value", None)
 
-            if node and property and node.has("on.%s.%s" % (event, property)):
-                node.invoke(
-                    handler = "on.%s.%s" % (event, property),
-                    event = event,
-                    chain = chain,
-                    data = data
+            handlernode = self.handler(event)
+            if handlernode:
+                handler = handlernode
+                handlerscript = handlernode.render()
+                invokeoutput = node.invoke(
+                    script = handlerscript,
+                    handler = handler,
+                    context = {
+                        "event": event,
+                        "data": data
+                    }
                 )
+
+                self.logger.info(' GremlinFS: invoking event handler resulted in output: ')
+                self.logger.info(invokeoutput)
+
+            if node and _property and node.has("on.%s.%s" % (event, _property)):
+                handler = node
+                scriptproperty = "on.%s.%s" % (event, _property)
+                handlerscript = node.getProperty(handler, default = None, encoding = None, prefix = None)
+                invokeoutput = node.invoke(
+                    script = handlerscript,
+                    handler = handler,
+                    context = {
+                        "event": event,
+                        "data": data
+                    }
+                )
+
+                self.logger.info(' GremlinFS: invoking event handler resulted in output: ')
+                self.logger.info(invokeoutput)
 
             if node and node.has("on.%s" % (event)):
-                node.invoke(
-                    handler = "on.%s" % (event),
-                    event = event,
-                    chain = chain,
-                    data = data
+                handler = node
+                scriptproperty = "on.%s" % (event)
+                handlerscript = node.getProperty(handler, default = None, encoding = None, prefix = None)
+                invokeoutput = node.invoke(
+                    script = handlerscript,
+                    handler = handler,
+                    context = {
+                        "event": event,
+                        "data": data
+                    }
                 )
+
+                self.logger.info(' GremlinFS: invoking event handler resulted in output: ')
+                self.logger.info(invokeoutput)
 
             # Check if this event should be propagated
             if node and propagate:
@@ -3740,6 +3787,66 @@ class GremlinFSVertex(GremlinFSNode):
 
         return True
 
+    def context(self):
+
+        node = self
+
+        templatectx = {}
+
+        try:
+
+            ps = GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
+                GremlinFS.operations().a().inE().outV()
+            ).until(
+                GremlinFS.operations().a().inE().count().is_(0).or_().loops().is_(P.gt(10))
+            ).path().toList()
+
+            vs = GremlinFSVertex.fromVs(GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
+                GremlinFS.operations().a().inE().outV()
+            ).until(
+                GremlinFS.operations().a().inE().count().is_(0).or_().loops().is_(P.gt(10))
+            ))
+
+            vs2 = {}
+            for v in vs:
+                vs2[v.get('id')] = v
+
+            templatectx = vs2[ node.get('id') ].all()
+            templatectxi = templatectx
+
+            for v in ps:
+                templatectxi = templatectx
+                haslabel = False
+                for v2 in v.objects:
+                    v2id = (v2.id)['@value']
+                    if isinstance(v2, Vertex):
+                        if haslabel:
+                            found = None
+                            for ctemplatectxi in templatectxi:
+                                if ctemplatectxi.get('id') == v2id:
+                                    found = ctemplatectxi
+
+                            if found:
+                                templatectxi = found
+
+                            else:
+                                templatectxi.append(vs2[v2id].all())
+                                templatectxi = templatectxi[-1]
+
+                    elif isinstance(v2, Edge):
+                        haslabel = True
+                        if v2.label in templatectxi:
+                            pass
+                        else:
+                            templatectxi[v2.label] = []
+
+                        templatectxi = templatectxi[v2.label]
+
+        except Exception as e:
+            self.logger.exception(' GremlinFS: context exception ', e)
+
+        return templatectx
+
     def render(self):
 
         node = self
@@ -3780,20 +3887,20 @@ class GremlinFSVertex(GremlinFSNode):
                 readfn = label_config["readfn"]
 
         except Exception as e:
-            self.logger.exception(' GremlinFS: readNode template exception ', e)
+            self.logger.exception(' GremlinFS: template exception ', e)
 
         try:
 
             ps = GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
-                GremlinFS.operations().a().outE().inV()
+                GremlinFS.operations().a().inE().outV()
             ).until(
-                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+                GremlinFS.operations().a().inE().count().is_(0).or_().loops().is_(P.gt(10))
             ).path().toList()
 
             vs = GremlinFSVertex.fromVs(GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
-                GremlinFS.operations().a().outE().inV()
+                GremlinFS.operations().a().inE().outV()
             ).until(
-                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+                GremlinFS.operations().a().inE().count().is_(0).or_().loops().is_(P.gt(10))
             ))
 
             vs2 = {}
@@ -3819,7 +3926,7 @@ class GremlinFSVertex(GremlinFSNode):
                                 templatectxi = found
 
                             else:
-                                list(templatectxi).append(vs2[v2id].all())
+                                templatectxi.append(vs2[v2id].all())
                                 templatectxi = templatectxi[-1]
 
                     elif isinstance(v2, Edge):
@@ -3834,25 +3941,20 @@ class GremlinFSVertex(GremlinFSNode):
             if template:
 
                 data = self.utils().render(
-                    template, {
-                        "self": GremlinFSNodeWrapper(
-                            node = node
-                        )
-                    }
+                    template,
+                    templatectx
                 )
 
             elif readfn:
 
                 data = readfn(
                     node = node,
-                    wrapper = GremlinFSNodeWrapper(
-                        node = node
-                    ),
+                    wrapper = templatectx,
                     data = data
                 )
 
         except Exception as e:
-            self.logger.exception(' GremlinFS: readNode render exception ', e)
+            self.logger.exception(' GremlinFS: render exception ', e)
 
         return data
 
