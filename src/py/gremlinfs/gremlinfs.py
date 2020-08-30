@@ -3839,15 +3839,15 @@ class GremlinFSVertex(GremlinFSNode):
         try:
 
             ps = GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
-                __.outE().inV()
+                __.inE().outV()
             ).until(
-                __.outE().count().is_(0).or_().loops().is_(P.gt(10))
+                __.inE().count().is_(0).or_().loops().is_(P.gt(10))
             ).path().toList()
 
             vs = GremlinFSVertex.fromVs(GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
-                __.outE().inV()
+                __.inE().outV()
             ).until(
-                __.outE().count().is_(0).or_().loops().is_(P.gt(10))
+                __.inE().count().is_(0).or_().loops().is_(P.gt(10))
             ))
 
             vs2 = {}

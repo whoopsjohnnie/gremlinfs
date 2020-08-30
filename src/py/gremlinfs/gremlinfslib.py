@@ -3785,15 +3785,15 @@ class GremlinFSVertex(GremlinFSNode):
         try:
 
             ps = GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
-                GremlinFS.operations().a().outE().inV()
+                GremlinFS.operations().a().inE().outV()
             ).until(
-                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+                GremlinFS.operations().a().inE().count().is_(0).or_().loops().is_(P.gt(10))
             ).path().toList()
 
             vs = GremlinFSVertex.fromVs(GremlinFS.operations().g().V( node.get('id') ).emit().repeat(
-                GremlinFS.operations().a().outE().inV()
+                GremlinFS.operations().a().inE().outV()
             ).until(
-                GremlinFS.operations().a().outE().count().is_(0).or_().loops().is_(P.gt(10))
+                GremlinFS.operations().a().inE().count().is_(0).or_().loops().is_(P.gt(10))
             ))
 
             vs2 = {}
@@ -3819,7 +3819,7 @@ class GremlinFSVertex(GremlinFSNode):
                                 templatectxi = found
 
                             else:
-                                list(templatectxi).append(vs2[v2id].all())
+                                templatectxi.append(vs2[v2id].all())
                                 templatectxi = templatectxi[-1]
 
                     elif isinstance(v2, Edge):
@@ -3834,20 +3834,15 @@ class GremlinFSVertex(GremlinFSNode):
             if template:
 
                 data = self.utils().render(
-                    template, {
-                        "self": GremlinFSNodeWrapper(
-                            node = node
-                        )
-                    }
+                    template,
+                    templatectx
                 )
 
             elif readfn:
 
                 data = readfn(
                     node = node,
-                    wrapper = GremlinFSNodeWrapper(
-                        node = node
-                    ),
+                    wrapper = templatectx,
                     data = data
                 )
 
