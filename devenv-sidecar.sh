@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-CONTAINER_NAME="bash-dev"
+CONTAINER_NAME="gremlinfs-dev-sidecar"
 GIT_SHA=$(git rev-parse HEAD | cut -c 1-8)
 IMAGE="bash"
 
@@ -20,7 +20,7 @@ docker rm $CONTAINER_NAME || true
 docker run \
   -it \
   --privileged \
-  -v $THIS_DIR/$GFS_VOLUME:/$GFS_VOLUME \
+  -v /$GFS_VOLUME:/$GFS_VOLUME \
   --network host \
   --name $CONTAINER_NAME \
   $IMAGE 

@@ -28,7 +28,7 @@ docker run \
   -v /dev:/dev \
   -v $PWD:/gremlinfs \
   --device /dev/fuse \
-  --mount type=bind,source="$THIS_DIR"/$GFS_VOLUME,target=/$GFS_VOLUME,bind-propagation=rshared \
+  --mount type=bind,source=/$GFS_VOLUME,target=/$GFS_VOLUME,bind-propagation=rshared \
   --network host \
   --name $CONTAINER_NAME \
   $IMAGE
