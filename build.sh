@@ -1,4 +1,4 @@
 #!/bin/bash
 
-docker build -f Dockerfile.orientdb .
-docker build -f Dockerfile.theia . 
+docker build -f docker/Dockerfile.orientdb .
+docker build -f docker/Dockerfile.theia . 

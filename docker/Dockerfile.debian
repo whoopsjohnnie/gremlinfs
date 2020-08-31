@@ -1,0 +1,22 @@
+FROM python:3.6-buster
+
+RUN apt update
+RUN apt install -y \
+    libfuse2 \
+    libfuse-dev \
+    fuse 
+
+COPY . /gremlinfs
+RUN pip3 install -r /gremlinfs/requirements.txt
+
+ENV ORIENTDB_HOST=10.88.88.183
+ENV ORIENTDB_USER=root
+ENV ORIENTDB_PASSWORD=root
+ENV ORIENTDB_PORT=8182
+
+ENV RABBITMQ_HOST=10.88.88.183
+ENV RABBITMQ_USER=rabbitmq
+ENV RABBITMQ_PASSWORD=rabbitmq
+ENV RABBITMQ_PORT=5672
+
+ENTRYPOINT ["/gremlinfs/bootstrap.sh"]
