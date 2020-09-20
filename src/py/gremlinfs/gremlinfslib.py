@@ -2406,10 +2406,22 @@ class GremlinFSNode(GremlinFSBase):
                 return "%s@%s@%s" % (mapname, maplabel, mapuuid)
 
         elif mapname and maplabel and short:
-            return mapname
+            # Mimic traditional filesystem extensions
+            if maplabel == "vertex":
+                return mapname
+            elif maplabel == self.config("folder_label"):
+                return mapname
+            else:
+                return mapname + "." + maplabel
 
         elif mapname and maplabel:
-            return mapname
+            # Mimic traditional filesystem extensions
+            if maplabel == "vertex":
+                return mapname
+            elif maplabel == self.config("folder_label"):
+                return mapname
+            else:
+                return mapname + "." + maplabel
 
         elif mapname:
             return mapname
