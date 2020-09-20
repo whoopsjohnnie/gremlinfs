@@ -210,7 +210,9 @@ class GremlinFSPath(GremlinFSBase):
 
         else:
             nodes = GremlinFSVertex.fromVs(
-                GremlinFS.operations().g().V().where(
+                GremlinFS.operations().g().V().has(
+                    'namespace', GremlinFS.operations().config("fs_ns")
+                ).where(
                     GremlinFS.operations().a().out(
                         GremlinFS.operations().config("in_label", "in")
                     ).count().is_(0)
@@ -389,6 +391,13 @@ class GremlinFSPath(GremlinFSBase):
                     match.update({
                         "path": "vertex_out_edges",
                         "vertexid": GremlinFSUtils.found( expanded[vindex + 1] )
+                    })
+
+                elif node and node.edge( expanded[vindex + 2], False ):
+                    match.update({
+                        "path": "vertex_out_edge",
+                        "vertexid": GremlinFSUtils.found( expanded[vindex + 1] ),
+                        "vertexedge": GremlinFSUtils.found( expanded[vindex + 2] )
                     })
 
                 # else:
@@ -996,7 +1005,9 @@ class GremlinFSPath(GremlinFSBase):
 
             else:
                 nodes = GremlinFSVertex.fromVs(
-                    self.g().V().where(
+                    self.g().V().has(
+                        'namespace', self.config("fs_ns")
+                    ).where(
                         GremlinFS.operations().a().out(
                             self.config("in_label")
                         ).count().is_(0)
@@ -1103,6 +1114,18 @@ class GremlinFSPath(GremlinFSBase):
                 GremlinFS.operations().config("in_edge_folder", "EI"), 
                 GremlinFS.operations().config("out_edge_folder", "EO"),
             ])
+
+            nodes = GremlinFSVertex.fromVs(
+                self.g().V(
+                    node.get("id")
+                ).outE()
+            )
+            if nodes:
+                for cnode in nodes:
+                    if cnode.get("label") and cnode.get("name"):
+                        entries.append( "%s@%s" % (cnode.get("name"), cnode.get("label")) )
+                    elif cnode.get("label"):
+                        entries.append( "%s" % (cnode.get("label")) )
 
             return entries
 
@@ -1399,8 +1422,41 @@ class GremlinFSPath(GremlinFSBase):
         # elif self._path == "vertex_folder_property":
         #     return default
 
-        # elif self._path == "vertex_property":
-        #     return default
+        elif self._path == "vertex_property":
+
+            node = self.node()
+
+            # We are the target
+            # To create an inbound link, we shall pass source=sourcematch, target=node
+            # To create an outbound link, we shall pass source=source and target=target
+            source = node
+            target = sourcematch.node()
+
+            label = GremlinFSEdge.infer("label", self._vertexproperty, None)
+            name = GremlinFSEdge.infer("name", self._vertexproperty, None)
+
+            if not label and name:
+                label = name
+                name = None
+
+            # Create link from source to target
+            # Inbound means source=target and target=source
+            # newlink = 
+            source.createLink(
+                target = target,
+                label = label,
+                name = name,
+                mode = mode
+            )
+
+#             self.mqevent(
+#                 event = "create_link",
+#                 link = newlink,
+#                 source = source,
+#                 target = target
+#             )
+
+            return True
 
         # elif self._path == "vertex_edges":
         #     return default
@@ -1597,8 +1653,56 @@ class GremlinFSPath(GremlinFSBase):
         # elif self._path == "vertex_folder_property":
         #     return default
 
-        # elif self._path == "vertex_property":
-        #     return default
+        elif self._path == "vertex_property":
+
+            node = self.node()
+
+            label = GremlinFSEdge.infer("label", self._vertexedge, None)
+            name = GremlinFSEdge.infer("name", self._vertexedge, None)
+
+            if not label and name:
+                label = name
+                name = None
+
+            if label and name:
+                # we are the target, out edge means ...
+#                 link = node.getLink(
+#                     label = label,
+#                     name = name,
+#                     ine = False
+#                 )
+
+                node.deleteLink(
+                    label = label,
+                    name = name,
+                    ine = False
+                )
+
+#                 self.mqevent(
+#                     event = "delete_link",
+#                     link = link
+#                 )
+
+            elif label:
+                # we are the target, out edge means ...
+#                 link = node.getLink(
+#                     label = label,
+#                     name = None,
+#                     ine = False
+#                 )
+
+                node.deleteLink(
+                    label = label,
+                    name = None,
+                    ine = False
+                )
+
+#                 self.mqevent(
+#                     event = "delete_link",
+#                     link = link
+#                 )
+
+            return True
 
         # elif self._path == "vertex_edges":
         #     return default
@@ -2402,10 +2506,22 @@ class GremlinFSNode(GremlinFSBase):
                 return "%s@%s@%s" % (mapname, maplabel, mapuuid)
 
         elif mapname and maplabel and short:
-            return mapname
+            # Mimic traditional filesystem extensions
+            if maplabel == "vertex":
+                return mapname
+            elif maplabel == self.config("folder_label"):
+                return mapname
+            else:
+                return mapname + "." + maplabel
 
         elif mapname and maplabel:
-            return mapname
+            # Mimic traditional filesystem extensions
+            if maplabel == "vertex":
+                return mapname
+            elif maplabel == self.config("folder_label"):
+                return mapname
+            else:
+                return mapname + "." + maplabel
 
         elif mapname:
             return mapname
@@ -4265,7 +4381,9 @@ class GremlinFSVertex(GremlinFSNode):
 
         if not node:
             return GremlinFSVertex.fromMaps(
-                self.g().V().where(
+                self.g().V().has(
+                    'namespace', self.config("fs_ns")
+                ).where(
                     GremlinFS.operations().a().out(
                         self.config("in_label")
                     ).count().is_(0)
@@ -4276,6 +4394,8 @@ class GremlinFSVertex(GremlinFSNode):
             return GremlinFSVertex.fromMaps(
                 self.g().V(
                     node.get("id")
+                ).has(
+                    'namespace', self.config("fs_ns")
                 ).inE(
                     self.config("in_label")
                 ).outV().valueMap(True).toList()
