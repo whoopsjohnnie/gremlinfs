@@ -2567,9 +2567,10 @@ class GremlinFSNode(GremlinFSBase):
             return default
 
         if encoding:
-            data = self.utils().tobytes(data)
             data = self.utils().decode(data, encoding)
-            data = self.utils().tostring(data)
+
+        elif data.startswith("base64:"):
+            data = self.utils().decode(data, "base64")
 
         return data
 
@@ -2586,9 +2587,7 @@ class GremlinFSNode(GremlinFSBase):
         nodeid = node.get("id")
 
         if encoding:
-            data = self.utils().tobytes(data)
             data = self.utils().encode(data, encoding)
-            data = self.utils().tostring(data)
 
         node.set(name, data, prefix = prefix)
 
@@ -4968,7 +4967,7 @@ class GremlinFSUtils(GremlinFSBase):
                 data = data.decode(
                     encoding='utf-8', 
                     errors='strict'
-                    )
+                )
 
                 return data
 
@@ -4979,12 +4978,27 @@ class GremlinFSUtils(GremlinFSBase):
 
     def decode(self, data, encoding = "base64"):
         import base64
-        data = base64.b64decode(data)
+        if data and data.startswith("base64:"):
+            data = self.utils().tostring(
+                base64.b64decode(
+                    self.utils().tobytes(data[7:])
+                )
+            )
+        else:
+            data = self.utils().tostring(
+                base64.b64decode(
+                    self.utils().tobytes(data)
+                )
+            )
         return data
 
     def encode(self, data, encoding = "base64"):
         import base64
-        data = base64.b64encode(data)
+        data = "%s:%s" % ( encoding, self.utils().tostring(
+            base64.b64encode(
+                self.utils().tobytes(data)
+            )
+        ))
         return data
 
     def render(self, template, templatectx):
