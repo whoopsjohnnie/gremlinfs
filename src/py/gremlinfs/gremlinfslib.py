@@ -2645,28 +2645,53 @@ class GremlinFSNode(GremlinFSBase):
 
         node = self
 
-        existing = {}
+        if not node:
+            return
 
-        existing.update(node.all(prefix))
+        nodeid = node.get("id")
 
-        if existing:
-            for key, value in existing.items():
-                if not key in properties:
-                    node.unsetProperty(
-                        key,
-                        prefix = prefix
-                    )
+        # existing = {}
+
+        # existing.update(node.all(prefix))
+
+        # if existing:
+        #     for key, value in existing.items():
+        #         if not key in properties:
+        #             node.unsetProperty(
+        #                 key,
+        #                 prefix = prefix
+        #             )
 
         if properties:
-            for key, value in properties.items():
+            for name, data in properties.items():
                 try:
-                    node.setProperty(
-                        key,
-                        value,
-                        prefix = prefix
-                    )
+
+                    # node.setProperty(
+                    #     key,
+                    #     value,
+                    #     prefix = prefix
+                    # )
+
+                    node.set(name, data, prefix = prefix)
+
+                    if prefix:
+                        name = "%s.%s" % (prefix, name)
+
+                    # GremlinFSVertex.fromV(
+                    self.g().V(
+                        nodeid
+                    ).property(
+                        name, data
+                    ).next()
+                    # )
+
                 except Exception as e:
                     self.logger.exception(' GremlinFS: setProperties exception ', e)
+
+        self.mqevent(GremlinFSEvent(
+            event = "update_node",
+            node = node
+        ))
 
     def getProperties(self, prefix = None):
 
@@ -2742,11 +2767,11 @@ class GremlinFSNode(GremlinFSBase):
                 executable = "/bin/sh"
                 cwd = tempfile.gettempdir()
 
-                self.logger.info(' GremlinFS: invoking event handler with env ')
-                self.logger.info(executable)
-                self.logger.info(script)
-                self.logger.info(cwd)
-                self.logger.info(env)
+                self.logger.debug(' GremlinFS: invoking event handler with env ')
+                self.logger.debug(executable)
+                self.logger.debug(script)
+                self.logger.debug(cwd)
+                self.logger.debug(env)
 
                 # subprocess.call(
                 calloutput = subprocess.check_output(
@@ -5301,13 +5326,13 @@ class GremlinFS():
         mqroutingkeys = self.config("mq_routing_keys")
         mqroutingkey = self.config("mq_routing_key")
 
-        self.logger.info( ' GremlinFS: AMQP DETAILS: ' )
-        self.logger.info( ' GremlinFS: MQ EXCHANGE NAME: ' + mqexchangename + ", TYPE: " + mqexchangetype )
-        self.logger.info( ' GremlinFS: MQ QUEUE NAME: ' + mqqueuename )
-        self.logger.info( ' GremlinFS: MQ ROUTING KEYS: ' )
-        self.logger.info(mqroutingkeys)
+        self.logger.debug( ' GremlinFS: AMQP DETAILS: ' )
+        self.logger.debug( ' GremlinFS: MQ EXCHANGE NAME: ' + mqexchangename + ", TYPE: " + mqexchangetype )
+        self.logger.debug( ' GremlinFS: MQ QUEUE NAME: ' + mqqueuename )
+        self.logger.debug( ' GremlinFS: MQ ROUTING KEYS: ' )
+        self.logger.debug(mqroutingkeys)
         if mqroutingkey:
-            self.logger.info( ' GremlinFS: MQ DEFAULT ROUTING KEY: ' + mqroutingkey )
+            self.logger.debug( ' GremlinFS: MQ DEFAULT ROUTING KEY: ' + mqroutingkey )
 
         mqconnection = self.mqconnection()
         mqchannel = mqconnection.channel()
@@ -5451,17 +5476,17 @@ class GremlinFS():
         mqroutingkeys = self.config("mq_routing_keys")
         mqroutingkey = self.config("mq_routing_key")
 
-        self.logger.info( ' GremlinFS: AMQP DETAILS: ' )
-        self.logger.info( ' GremlinFS: MQ EXCHANGE NAME: ' + mqexchangename + ", TYPE: " + mqexchangetype )
-        self.logger.info( ' GremlinFS: MQ QUEUE NAME: ' + mqqueuename )
-        self.logger.info( ' GremlinFS: MQ ROUTING KEYS: ' )
-        self.logger.info(mqroutingkeys)
+        self.logger.debug( ' GremlinFS: AMQP DETAILS: ' )
+        self.logger.debug( ' GremlinFS: MQ EXCHANGE NAME: ' + mqexchangename + ", TYPE: " + mqexchangetype )
+        self.logger.debug( ' GremlinFS: MQ QUEUE NAME: ' + mqqueuename )
+        self.logger.debug( ' GremlinFS: MQ ROUTING KEYS: ' )
+        self.logger.debug(mqroutingkeys)
         if mqroutingkey:
-            self.logger.info( ' GremlinFS: MQ DEFAULT ROUTING KEY: ' + mqroutingkey )
-            self.logger.info(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT: routing: ' + mqroutingkey + ' @ exchange: ' + mqexchangename)
+            self.logger.debug( ' GremlinFS: MQ DEFAULT ROUTING KEY: ' + mqroutingkey )
+            self.logger.debug(' GremlinFS: OUTBOUND AMQP/RABBIT EVENT: routing: ' + mqroutingkey + ' @ exchange: ' + mqexchangename)
 
-        self.logger.info(' event: ')
-        self.logger.info(data)
+        self.logger.debug(' event: ')
+        self.logger.debug(data)
 
         try:
 
