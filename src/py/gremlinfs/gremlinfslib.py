@@ -2645,28 +2645,53 @@ class GremlinFSNode(GremlinFSBase):
 
         node = self
 
-        existing = {}
+        if not node:
+            return
 
-        existing.update(node.all(prefix))
+        nodeid = node.get("id")
 
-        if existing:
-            for key, value in existing.items():
-                if not key in properties:
-                    node.unsetProperty(
-                        key,
-                        prefix = prefix
-                    )
+        # existing = {}
+
+        # existing.update(node.all(prefix))
+
+        # if existing:
+        #     for key, value in existing.items():
+        #         if not key in properties:
+        #             node.unsetProperty(
+        #                 key,
+        #                 prefix = prefix
+        #             )
 
         if properties:
-            for key, value in properties.items():
+            for name, data in properties.items():
                 try:
-                    node.setProperty(
-                        key,
-                        value,
-                        prefix = prefix
-                    )
+
+                    # node.setProperty(
+                    #     key,
+                    #     value,
+                    #     prefix = prefix
+                    # )
+
+                    node.set(name, data, prefix = prefix)
+
+                    if prefix:
+                        name = "%s.%s" % (prefix, name)
+
+                    # GremlinFSVertex.fromV(
+                    self.g().V(
+                        nodeid
+                    ).property(
+                        name, data
+                    ).next()
+                    # )
+
                 except Exception as e:
                     self.logger.exception(' GremlinFS: setProperties exception ', e)
+
+        self.mqevent(GremlinFSEvent(
+            event = "update_node",
+            node = node
+        ))
 
     def getProperties(self, prefix = None):
 
