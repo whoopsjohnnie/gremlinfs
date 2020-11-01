@@ -4042,12 +4042,11 @@ class GremlinFSVertex(GremlinFSNode):
 
         try:
 
-            templatenodes = node.follow(self.config("template_label"))
+            templatenodes = node.follow(self.config("view_label"))
             if templatenodes and len(templatenodes) >= 1:
-                template = templatenodes[0].readProperty(
-                    self.config("data_property"),
-                    "",
-                    encoding = "base64"
+                template = templatenodes[0].getProperty(
+                    self.config("template_property"),
+                    ""
                 )
 
             elif node.hasProperty(self.config("template_property")):
@@ -5422,6 +5421,7 @@ class GremlinFSOperations(Operations):
             "in_label": GremlinFSUtils.conf('in_label', 'ref'),
             "self_label": GremlinFSUtils.conf('self_label', 'ref'),
             "template_label": GremlinFSUtils.conf('template_label', 'template'),
+            "view_label": GremlinFSUtils.conf('view_label', 'view'),
 
             "in_name": GremlinFSUtils.conf('in_name', 'in0'),
             "self_name": GremlinFSUtils.conf('self_name', 'self0'),

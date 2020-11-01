@@ -90,6 +90,7 @@ gremlinfs = dict(
     in_label = 'in',
     self_label = 'self',
     template_label = 'template',
+    view_label = 'view',
 
     in_name = 'in0',
     self_name = 'self0',
