@@ -9,6 +9,9 @@ RUN apt install -y \
 COPY . /gremlinfs
 RUN pip3 install -r /gremlinfs/requirements.txt
 
+RUN addgroup --system --gid 1001 bots
+RUN useradd --uid 1001 --gid 1001 bots -p botsbots
+
 ENV ORIENTDB_HOST=10.88.88.183
 ENV ORIENTDB_USER=root
 ENV ORIENTDB_PASSWORD=root
