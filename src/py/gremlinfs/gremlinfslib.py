@@ -4129,14 +4129,15 @@ class GremlinFSVertex(GremlinFSNode):
                     'in_label', self.config("in_label")
                 ).property(
                     'in_name', self.config("in_name")
-                ).property(
-                    'query', "g.V('%s').has('uuid', '%s').has('type', '%s').inE('%s').outV()" % (
-                        str(newfolder.get("id")),
-                        str(newfolder.get("uuid")),
-                        'group',
-                        self.config("in_label")
-                    )
                 )
+                # .property(
+                #     'query', "g.V('%s').has('uuid', '%s').has('type', '%s').inE('%s').outV()" % (
+                #         str(newfolder.get("id")),
+                #         str(newfolder.get("uuid")),
+                #         'group',
+                #         self.config("in_label")
+                #     )
+                # )
             )
 
             GremlinFSVertex.fromV(
