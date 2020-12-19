@@ -1,0 +1,106 @@
+
+# https://www.develves.net/blogs/asd/2016-02-11-using-virtual-environments-python-1/#python-installation-os-x
+
+
+
+# Mac OS X Python 2.7
+> sudo port install python27
+> sudo port install py27-pip
+> sudo port install py27-pipfile
+> sudo port install py27-virtualenv
+
+
+
+# Mac OS X Python 3.6
+> sudo port install python36
+> sudo port install py36-pip
+> sudo port install py36-pipfile
+> sudo port install py36-virtualenv
+
+
+
+# Mac OS X Python 3.7
+> sudo port install python37
+> sudo port install py37-pip
+> sudo port install py37-pipfile
+> sudo port install py37-virtualenv
+
+
+
+# Mac OS X Python 3.8
+> sudo port install python38
+> sudo port install py38-pip
+> sudo port install py38-pipfile
+> sudo port install py38-virtualenv
+
+
+
+# Pipenv
+> sudo port install py-pipfile
+> sudo port install pipenv
+
+
+
+# Mac OS X Defaults
+> sudo port select --set python2 python27
+> sudo port select --set pip2 pip27
+
+> sudo port select --set pip3 pip36
+> sudo port select --set python3 python36
+
+> sudo port select --set pip pip36
+> sudo port select --set python python36
+> sudo port select --set virtualenv virtualenv36
+
+
+
+# Virtualenv
+
+# Create a virtualenv to isolate our package dependencies locally
+> virtualenv env
+created virtual environment CPython3.6.11.final.0-64 in 344ms
+  creator CPython3Posix(dest=.../env, clear=False, global=False)
+  seeder FromAppData(download=False, pip=bundle, setuptools=bundle, wheel=bundle, via=copy, app_data_dir=...)
+    added seed packages: pip==20.1.1, setuptools==49.2.0, wheel==0.34.2
+  activators BashActivator,CShellActivator,FishActivator,PowerShellActivator,PythonActivator,XonshActivator
+
+# source env/bin/activate
+> source ./env/bin/activate
+(env) ...
+
+> which python
+.../env/bin/python
+
+> which pip
+.../env/bin/pip
+
+> python --version
+Python 3.6.11
+
+> pip --version
+pip 20.1.1 from .../env/lib/python3.6/site-packages/pip (python 3.6)
+
+> pip install pipfile-requirements
+> ./env/bin/pipfile2req
+
+# Install dependencies
+> pip install -r ./requirements.txt
+
+> pip list
+> pip freeze
+
+> deactivate
+
+
+
+# Pipenv
+
+> pipenv shell
+> pipenv --venv
+.../.local/share/virtualenvs/gremlinfs-QNFneZ6P
+
+# Install dependencies
+> pipenv install -r ./requirements.txt
+
+> pip list
+> pip freeze
