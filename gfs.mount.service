@@ -2,7 +2,9 @@
 Description=gfsmount
 
 [Service]
-# User=root
+# If using a non root user, then
+# make sure mount dir is writable as user
+User=bots
 RestartSec=1
 Type=forking
 TimeoutStartSec=0
