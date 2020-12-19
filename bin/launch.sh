@@ -27,4 +27,7 @@ mkdir -p ${GFS_FS_MOUNT}
 # python /app/src/py/gremlinfs/gremlinfs.py ${GFS_FS_MOUNT} ${GREMLIN_HOST} ${GREMLIN_PORT} ${GREMLIN_USERNAME} ${GREMLIN_PASSWORD} ${RABBITMQ_HOST} ${RABBITMQ_PORT} ${RABBITMQ_USERNAME} ${RABBITMQ_PASSWORD} &
 python3 /app/src/py/gremlinfs/gremlinfs.py ${GFS_FS_MOUNT} ${GREMLIN_HOST} ${GREMLIN_PORT} ${GREMLIN_USERNAME} ${GREMLIN_PASSWORD} ${RABBITMQ_HOST} ${RABBITMQ_PORT} ${RABBITMQ_USERNAME} ${RABBITMQ_PASSWORD} &
 
-node /home/theia/src-gen/backend/main.js /home/project --hostname=0.0.0.0
+# 
+echo "{\"recentRoots\":[\"\"]}" > /home/theia/.theia/recentworkspace.json
+
+node /home/theia/src-gen/backend/main.js /home/theia --hostname=0.0.0.0
