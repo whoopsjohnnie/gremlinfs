@@ -1,12 +1,9 @@
 #!/bin/bash
-
-set -x
 set -e
 
-GFS_MOUNTPOINT="/data"
-GREMLINFS_DIR="/gremlinfs"
-
-mkdir -p $GFS_MOUNTPOINT
+CONTAINER_NAME="gremlinfs-dev-sidecar"
+GIT_SHA=$(git rev-parse HEAD | cut -c 1-8)
+IMAGE="bash"
 
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
@@ -16,7 +13,14 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 THIS_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 echo "This Dir: $THIS_DIR"
+source $THIS_DIR/devenv-common.sh
 
-systemctl daemon-reload
-systemctl reset-failed
-systemctl start gfs.mount.service
+docker stop $CONTAINER_NAME || true
+docker rm $CONTAINER_NAME || true
+docker run \
+  -it \
+  --privileged \
+  -v /$GFS_VOLUME:/$GFS_VOLUME \
+  --network host \
+  --name $CONTAINER_NAME \
+  $IMAGE 

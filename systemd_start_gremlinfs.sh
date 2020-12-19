@@ -1,7 +1,6 @@
 #!/bin/bash
-set -x
 
-GFS_SERVICE_IP="10.88.88.183"
+set -x
 
 RABBITMQ_USER=rabbitmq
 RABBITMQ_PASSWORD=rabbitmq
@@ -10,29 +9,35 @@ ORIENTDB_USER=root
 ORIENTDB_PASSWORD=root
 ORIENTDB_PORT=8182
 
+# if [ -z ${DEFAULT_IP} ]; then
+#     echo "DEFAULT_IP not set, constructing from default interface..."
+#     DEFAULT_INTERFACE=$(netstat -r | grep default | awk '{print $NF}')
+#     if [ -z ${DEFAULT_INTERFACE} ]; then 
+#         echo "Didn't find a default interface; exiting.";
+#         exit 1 
+#     else 
+#         echo "DEFAULT_INTERFACE is set to '$DEFAULT_INTERFACE'"; 
+#     fi
+#     DEFAULT_IP=$(ifconfig $DEFAULT_INTERFACE | grep inet | grep -v inet6 | awk '{ print $2 }')
+#     echo "DEFAULT_IP=$DEFAULT_IP"
+# fi
 
-if [ -z ${GFS_SERVICE_IP} ]; then
-    echo "GFS_SERVICE_IP not set - assuming this hosts the GFS_SERVICE, constructing from default interface..."
-    DEFAULT_INTERFACE=$(netstat -r | grep default | awk '{print $NF}')
-    if [ -z ${DEFAULT_INTERFACE} ]; then 
-        echo "Didn't find a default interface; exiting.";
-        exit 1 
-    else 
-        echo "DEFAULT_INTERFACE is set to '$DEFAULT_INTERFACE'"; 
-    fi
-    GFS_SERVICE_IP=$(ifconfig $DEFAULT_INTERFACE | grep inet | grep -v inet6 | awk '{ print $2 }')
-    echo "GFS_SERVICE_IP=$GFS_SERVICE_IP"
-fi
+# export DEFAULT_IP="192.168.0.27"
+# export DEFAULT_IP="botwork"
+# export DEFAULT_IP="192.168.59.3"
+export DEFAULT_IP="127.0.0.1"
+echo "CONNECTING TO IP: $DEFAULT_IP"
 
-# To test: GFS_SERVICE_IP=10.0.2.15 && /opt/rh/rh-python36/root/usr/bin/python3.6 /gremlinfs/src/py/gremlinfs/gremlinfs.py /home/vagrant/data $GFS_SERVICE_IP 8182 root root $GFS_SERVICE_IP 5672 rabbitmq rabbitmq 
-/opt/rh/rh-python36/root/usr/bin/python3.6 \
+# To test: DEFAULT_IP=10.0.2.15 && /opt/rh/rh-python36/root/usr/bin/python3.6 /gremlinfs/gremlinfs.py /home/vagrant/data $DEFAULT_IP 8182 root root $DEFAULT_IP 5672 rabbitmq rabbitmq 
+# /opt/rh/rh-python36/root/usr/bin/python3.6 \
+python3 \
     /gremlinfs/src/py/gremlinfs/gremlinfs.py \
-    $GFS_MOUNTPOINT \
-    $GFS_SERVICE_IP \
+    /data \
+    $DEFAULT_IP \
     $ORIENTDB_PORT \
     $ORIENTDB_USER \
     $ORIENTDB_PASSWORD \
-    $GFS_SERVICE_IP \
+    $DEFAULT_IP \
     $RABBITMQ_PORT \
     $RABBITMQ_USER \
     $RABBITMQ_PASSWORD & 

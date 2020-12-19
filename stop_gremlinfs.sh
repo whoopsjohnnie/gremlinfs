@@ -19,4 +19,4 @@ echo "This Dir: $THIS_DIR"
 
 systemctl daemon-reload
 systemctl reset-failed
-systemctl start gfs.mount.service
+systemctl stop gfs.mount.service
