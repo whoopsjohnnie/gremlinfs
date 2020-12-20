@@ -1,0 +1,60 @@
+version: '3'
+services:
+
+  # # FROM orientdb:3.0.21-tp3
+  # # ADD ./config/orientdb/config/gremlin-server.yaml /orientdb/config/gremlin-server.yaml
+  # # # ADD ./config/orientdb/config/ /orientdb/config/
+  # orientdb:
+  #   image: orientdb:3.0.21-tp3
+  #   # build:
+  #   #   context: ./
+  #   #   dockerfile: Dockerfile.orientdb
+  #   command: server.sh
+  #   volumes:
+  #     # - ./config/orientdb/config:/orientdb/config
+  #     - ./config/orientdb/config/gremlin-server.yaml:/orientdb/config/gremlin-server.yaml
+  #     - ./data/orientdb/databases:/orientdb/databases
+  #   environment:
+  #     ORIENTDB_ROOT_PASSWORD: root
+  #   hostname: "orientdb"
+  #   networks:
+  #     - gremlinfs
+  #   ports:
+  #     - 2424:2424
+  #     - 2480:2480
+  #     - 8182:8182
+
+  # docker pull neo4j
+  neo4j:
+    image: "neo4j:4.2"
+    hostname: "neo4j"
+    networks:
+      - gremlinfs
+
+  # https://hub.docker.com/r/tinkerpop/gremlin-server/
+  gremlin:
+    image: "tinkerpop/gremlin-server:3.4"
+    hostname: "gremlin"
+    networks:
+      - gremlinfs
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    environment:
+      RABBITMQ_DEFAULT_USER: "rabbitmq"
+      RABBITMQ_DEFAULT_PASS: "rabbitmq"
+      RABBITMQ_DEFAULT_VHOST: "/"
+      RABBITMQ_LOG_BASE: "/var/log/rabbitmq"
+    hostname: "rabbitmq"
+    networks:
+      - gremlinfs
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    labels:
+      NAME: "rabbitmq"
+
+networks:
+  gremlinfs: 
+    external:
+      name: gremlinfs
