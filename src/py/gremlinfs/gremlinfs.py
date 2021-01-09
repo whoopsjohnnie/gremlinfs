@@ -6793,7 +6793,8 @@ def main(
             operations,
             mount_point,
             nothreads = True,
-            foreground = True
+            foreground = True,
+            allow_other = True
         )
 
     except:
