@@ -6,7 +6,10 @@ set -e
 GFS_MOUNTPOINT="/data"
 GREMLINFS_DIR="/gremlinfs"
 
+# If using a non root user, then
+# make sure mount dir is writable as user
 mkdir -p $GFS_MOUNTPOINT
+chmod 777 $GFS_MOUNTPOINT
 
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink

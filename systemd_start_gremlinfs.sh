@@ -2,6 +2,10 @@
 
 set -x
 
+# If using a non root user, then
+# make sure mount dir is writable as user
+# whoami
+
 RABBITMQ_USER=rabbitmq
 RABBITMQ_PASSWORD=rabbitmq
 RABBITMQ_PORT=5672
