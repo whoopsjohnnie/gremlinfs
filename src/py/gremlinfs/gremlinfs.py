@@ -4200,14 +4200,15 @@ class GremlinFSVertex(GremlinFSNode):
                     'in_label', self.config("in_label")
                 ).property(
                     'in_name', self.config("in_name")
-                ).property(
-                    'query', "g.V('%s').has('uuid', '%s').has('type', '%s').inE('%s').outV()" % (
-                        str(newfolder.get("id")),
-                        str(newfolder.get("uuid")),
-                        'group',
-                        self.config("in_label")
-                    )
                 )
+                # .property(
+                #     'query', "g.V('%s').has('uuid', '%s').has('type', '%s').inE('%s').outV()" % (
+                #         str(newfolder.get("id")),
+                #         str(newfolder.get("uuid")),
+                #         'group',
+                #         self.config("in_label")
+                #     )
+                # )
             )
 
             GremlinFSVertex.fromV(
@@ -4862,35 +4863,35 @@ class GremlinFSUtils(GremlinFSBase):
 
             # try:
 
-            pyexec = PyExec.instance(
-                environment={
-                    "g": self.ro(),
-                    "self": node,
-                    # "node": node,
-                    "config": self.config()
-                },
-                blacklist=[],
-                allowed=[
-                    # g.V()
-                    '^g\.V\(\)([a-zA-Z0-9\(\)\.\'\,])*$',
-                    # g.V().inE(config.get('in_label')).outV()
-                    '^g\.V\(\)([a-zA-Z0-9\(\)\#\:\.\,\-\_\'\"])*$',
-                    # g.V('#17:68').inE('in').outV()
-                    # g.V(node.get('id')).inE(config.get('in_label')).outV()
-                    '^g\.V\(([a-zA-Z0-9\(\) \#\:\.\,\-\_\'\"]*)\)([a-zA-Z0-9\(\)\#\:\.\,\-\_\'\"])*$',
-                ],
-                notallowed=[
-                    '\;',
-                    'addE',
-                    'addV',
-                    'property',
-                    'drop'
-                ]
-            )
-
-            ret, log, err = pyexec.pyeval(
-                query.strip()
-            )
+            # pyexec = PyExec.instance(
+            #     environment={
+            #         "g": self.ro(),
+            #         "self": node,
+            #         # "node": node,
+            #         "config": self.config()
+            #     },
+            #     blacklist=[],
+            #     allowed=[
+            #         # g.V()
+            #         '^g\.V\(\)([a-zA-Z0-9\(\)\.\'\,])*$',
+            #         # g.V().inE(config.get('in_label')).outV()
+            #         '^g\.V\(\)([a-zA-Z0-9\(\)\#\:\.\,\-\_\'\"])*$',
+            #         # g.V('#17:68').inE('in').outV()
+            #         # g.V(node.get('id')).inE(config.get('in_label')).outV()
+            #         '^g\.V\(([a-zA-Z0-9\(\) \#\:\.\,\-\_\'\"]*)\)([a-zA-Z0-9\(\)\#\:\.\,\-\_\'\"])*$',
+            #     ],
+            #     notallowed=[
+            #         '\;',
+            #         'addE',
+            #         'addV',
+            #         'property',
+            #         'drop'
+            #     ]
+            # )
+            # 
+            # ret, log, err = pyexec.pyeval(
+            #     query.strip()
+            # )
 
             if not ret:
                 return [] # , log, err
@@ -4915,7 +4916,7 @@ class GremlinFSUtils(GremlinFSBase):
 
             pyexec = PyExec.instance(
                 environment={
-                    "g": self.ro(),
+                    # "g": self.ro(),
                     "self": node,
                     # "node": node,
                     "config": self.config()
