@@ -13,6 +13,3 @@ image() {
 
 image "alpine"
 image "debian"
-image "orientdb"
-image "theia"
-
