@@ -12,9 +12,10 @@ RUN pip3 install -r /gremlinfs/requirements.txt
 RUN addgroup --system --gid 1001 bots
 RUN useradd --uid 1001 --gid 1001 bots -p botsbots
 
-ENV GFSAPI_HOST=10.88.88.183
+# ENV GFSAPI_HOST=10.88.88.183
 # ENV GFSAPI_USER=
 # ENV GFSAPI_PASSWORD=
+ENV GFSAPI_HOST=gfs-api
 ENV GFSAPI_PORT=5000
 
 ENTRYPOINT ["/gremlinfs/bootstrap.sh"]
