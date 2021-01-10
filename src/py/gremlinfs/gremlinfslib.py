@@ -283,13 +283,16 @@ class GremlinFSNode(GremlinFSBase):
         if not data:
             return default
 
-        if encoding:
-            data = self.utils().decode(data, encoding)
+        # if encoding:
+        #     data = self.utils().decode(data, encoding)
+        # 
+        # elif data.startswith("base64:"):
+        #     data = self.utils().decode(data, "base64")
+        # 
+        # return data
 
-        elif data.startswith("base64:"):
-            data = self.utils().decode(data, "base64")
-
-        return data
+        # Rely on encoding prefix
+        return self.utils().decode(data)
 
     def setProperty(self, name, data = None, encoding = None, prefix = None):
 
@@ -1756,20 +1759,25 @@ class GremlinFSUtils(GremlinFSBase):
 
         return data
 
-    def decode(self, data, encoding = "base64"):
-        import base64
-        if data and data.startswith("base64:"):
-            data = self.utils().tostring(
-                base64.b64decode(
-                    self.utils().tobytes(data[7:])
+    # Rely on encoding prefix
+    # def decode(self, data, encoding = "base64"):
+    def decode(self, data):
+        try:
+            if data and data.startswith("base64:"):
+                import base64
+                data = self.utils().tostring(
+                    base64.b64decode(
+                        self.utils().tobytes(data[7:])
+                    )
                 )
-            )
-        else:
-            data = self.utils().tostring(
-                base64.b64decode(
-                    self.utils().tobytes(data)
-                )
-            )
+        except:
+            return data
+        # else:
+        #     data = self.utils().tostring(
+        #         base64.b64decode(
+        #             self.utils().tobytes(data)
+        #         )
+        #     )
         return data
 
     def encode(self, data, encoding = "base64"):
