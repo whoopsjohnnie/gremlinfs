@@ -3,73 +3,6 @@ import logging
 
 
 
-def render_json(node, wrapper, data = None):
-
-    data = ""
-
-    try:
-
-        import json
-        from flatten_json import unflatten
-
-        jsondata = wrapper.all(prefix = "data")
-        jsondata = unflatten(jsondata, '__') # '.')
-
-        data = json.dumps(
-            jsondata, 
-            indent=4, 
-            sort_keys=False
-        )
-
-    except:
-        logging.error(' GremlinFS: render_json JSON exception ')
-        traceback.print_exc()
-
-    return data
-
-
-
-def write_json(node, data):
-
-    try:
-
-        import json
-        from flatten_json import flatten
-
-        jsondata = json.loads(data)
-        jsondata = flatten(jsondata, '__') # '.')
-
-        node.setProperties(jsondata, 'data')
-
-    except:
-        logging.error(' GremlinFS: write_json JSON exception ')
-        traceback.print_exc()
-
-
-
-# def render_yaml(node, wrapper, data = None):
-#     pass
-
-
-
-def write_yaml(node, data):
-
-    try:
-
-        import yaml
-        from flatten_json import flatten
-
-        yamldata = yaml.safe_load(data)
-        yamldata = flatten(yamldata, '__') # '.')
-
-        node.setProperties(yamldata, 'data')
-
-    except:
-        logging.error(' GremlinFS: write_yaml YAML exception ')
-        traceback.print_exc()
-
-
-
 gremlinfs = dict(
 
     log_level = logging.INFO,
@@ -126,8 +59,8 @@ gremlinfs = dict(
                 "pattern": "^.*\.json$",
             }
         },
-        "readfn": render_json,
-        "writefn": write_json,
+        # "readfn": ...,
+        # "writefn": ...,
     }, {
         "name": "yaml",
         "label": "yaml",
@@ -145,7 +78,7 @@ gremlinfs = dict(
             }
         },
         # "readfn": ...,
-        "writefn": write_yaml,
+        # "writefn": ...,
     }, {
         "name": "group",
         "label": "group",
