@@ -1,4 +1,0 @@
-FROM orientdb:3.0.21-tp3
-
-ADD ./config/orientdb/config/gremlin-server.yaml /orientdb/config/gremlin-server.yaml
-# ADD ./config/orientdb/config/ /orientdb/config/

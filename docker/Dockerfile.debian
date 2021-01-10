@@ -12,14 +12,10 @@ RUN pip3 install -r /gremlinfs/requirements.txt
 RUN addgroup --system --gid 1001 bots
 RUN useradd --uid 1001 --gid 1001 bots -p botsbots
 
-ENV ORIENTDB_HOST=10.88.88.183
-ENV ORIENTDB_USER=root
-ENV ORIENTDB_PASSWORD=root
-ENV ORIENTDB_PORT=8182
-
-ENV RABBITMQ_HOST=10.88.88.183
-ENV RABBITMQ_USER=rabbitmq
-ENV RABBITMQ_PASSWORD=rabbitmq
-ENV RABBITMQ_PORT=5672
+# ENV GFSAPI_HOST=10.88.88.183
+# ENV GFSAPI_USER=
+# ENV GFSAPI_PASSWORD=
+ENV GFSAPI_HOST=gfs-api
+ENV GFSAPI_PORT=5000
 
 ENTRYPOINT ["/gremlinfs/bootstrap.sh"]

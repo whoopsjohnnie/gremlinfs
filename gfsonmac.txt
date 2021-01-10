@@ -1,0 +1,21 @@
+
+# 
+# https://osxfuse.github.io
+# https://github.com/fusepy/fusepy/issues/30
+# sudo port install osxfuse
+# :info:build Xcode 12.1 found at path '/Applications/Xcode.app/Contents/Developer'
+# :info:build Assertion 'common_variable_is_legal_name XCODE_SDK_10_15.6_XCODE' failed
+# 
+
+# get FUSE/fuselib from here https://osxfuse.github.io
+# will be installed to: /usr/local/lib/, /usr/local/include/
+> cd gremlinfs
+> pipenv shell
+> pip install -r ./requirements.txt
+
+> mkdir -p /tmp/data
+> cd src/py
+
+# > export FUSE_LIBRARY_PATH=/usr/local/lib/libfuse.dylib
+# > FUSE_LIBRARY_PATH=/usr/local/lib/libfuse.dylib python ./main.py /tmp/data localhost 5000
+> FUSE_LIBRARY_PATH=/usr/local/lib/libfuse.dylib python ./main.py /tmp/data controller 5000
