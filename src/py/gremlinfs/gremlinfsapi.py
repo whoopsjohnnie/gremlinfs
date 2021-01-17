@@ -793,11 +793,11 @@ class GremlinFSCachingAPI(GremlinFSAPI):
         cachepath = path
 
         if cachepath:
-            self.logger.info("CACHE: clear: path: %s", cachepath)
+            self.logger.debug("CACHE: clear: path: %s", cachepath)
             del self.cache[path]
 
         else:
-            self.logger.info("CACHE: clear full")
+            self.logger.debug("CACHE: clear full")
             self.cache = Dict() # {}
 
     # 

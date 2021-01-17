@@ -19,7 +19,8 @@ from gremlinfs.gremlinfslib import GremlinFS
 from gremlinfs.gremlinfs import GremlinFSOperations
 # from gremlinfs.gremlinfs import GremlinFSCachingOperations
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.DEBUG)
 
 
 

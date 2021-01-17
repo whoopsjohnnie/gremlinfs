@@ -1952,7 +1952,7 @@ class GremlinFS():
 
         # self.mount_point = mount_point
         # 
-        # self.logger.info(' GremlinFS mount point: ' + self.mount_point)
+        # self.logger.debug(' GremlinFS mount point: ' + self.mount_point)
 
         self.gfs_host = gfs_host
         self.gfs_port = gfs_port
@@ -1961,11 +1961,11 @@ class GremlinFS():
 
         self.gfs_url = "http://" + self.gfs_host + ":" + self.gfs_port
 
-        self.logger.info(' GremlinFS gfs host: ' + self.gfs_host)
-        self.logger.info(' GremlinFS gfs port: ' + self.gfs_port)
-        # self.logger.info(' GremlinFS gfs username: ' + self.gfs_username)
+        self.logger.debug(' GremlinFS gfs host: ' + self.gfs_host)
+        self.logger.debug(' GremlinFS gfs port: ' + self.gfs_port)
+        # self.logger.debug(' GremlinFS gfs username: ' + self.gfs_username)
         # self.logger.debug(' GremlinFS gfs password: ' + self.gfs_password)
-        self.logger.info(' GremlinFS gfs URL: ' + self.gfs_url)
+        self.logger.debug(' GremlinFS gfs URL: ' + self.gfs_url)
 
         self._config = GremlinFSConfig(
 

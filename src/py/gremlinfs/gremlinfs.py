@@ -67,8 +67,8 @@ from .gremlinfslib import GremlinFSVertex, GremlinFSEdge
 
 
 # 
-# logging.basicConfig(level=logging.INFO)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.DEBUG)
 
 
 
@@ -530,10 +530,9 @@ class GremlinFSPath(GremlinFSBase):
     # 
 
     def enter(self, functioname, *args, **kwargs):
-        # self.logger.debug(' GremlinFSPath: ENTER: %s ' % (functioname))
-        # self.logger.debug(args)
-        # self.logger.debug(kwargs)
-        pass
+        self.logger.debug(' GremlinFSPath: ENTER: %s ' % (functioname))
+        self.logger.debug(args)
+        self.logger.debug(kwargs)
 
     # 
 
@@ -2247,7 +2246,7 @@ class GremlinFSOperations(Operations):
 
         self.mount_point = mount_point
 
-        self.logger.info(' GremlinFS mount point: ' + self.mount_point)
+        self.logger.debug(' GremlinFS mount point: ' + self.mount_point)
 
         # self.gfs_host = gfs_host
         # self.gfs_port = gfs_port
@@ -2256,11 +2255,11 @@ class GremlinFSOperations(Operations):
 
         # self.gfs_url = "http://" + self.gfs_host + ":" + self.gfs_port
 
-        # self.logger.info(' GremlinFS gfs host: ' + self.gfs_host)
-        # self.logger.info(' GremlinFS gfs port: ' + self.gfs_port)
-        # self.logger.info(' GremlinFS gfs username: ' + self.gfs_username)
+        # self.logger.debug(' GremlinFS gfs host: ' + self.gfs_host)
+        # self.logger.debug(' GremlinFS gfs port: ' + self.gfs_port)
+        # self.logger.debug(' GremlinFS gfs username: ' + self.gfs_username)
         # # self.logger.debug(' GremlinFS gfs password: ' + self.gfs_password)
-        # self.logger.info(' GremlinFS gfs URL: ' + self.gfs_url)
+        # self.logger.debug(' GremlinFS gfs URL: ' + self.gfs_url)
 
         self._gfs = gfs
 
@@ -2309,7 +2308,9 @@ class GremlinFSOperations(Operations):
     # 
 
     def enter(self, functioname, *args, **kwargs):
-        pass
+        self.logger.debug(' GremlinFSPath: ENTER: %s ' % (functioname))
+        self.logger.debug(args)
+        self.logger.debug(kwargs)
 
     # 
 
@@ -3023,7 +3024,7 @@ class GremlinFSCachingOperations(GremlinFSOperations):
 
         cachepath = path
 
-        self.logger.info("CACHE: clear: path: %s", path)
+        self.logger.debug("CACHE: clear: path: %s", path)
         del self.cache[path]
 
     # 
@@ -3060,8 +3061,6 @@ class GremlinFSCachingOperations(GremlinFSOperations):
     #     pass
 
     def getattr(self, path, fh=None):
-
-        # self.logger.info(' !! getattr !! ')
 
         cachepath = path
         cacheoper = 'getattr'
@@ -3117,8 +3116,6 @@ class GremlinFSCachingOperations(GremlinFSOperations):
         return ret
 
     def readdir(self, path, fh):
-
-        # self.logger.info(' !! readdir !! ')
 
         cachepath = path
         cacheoper = 'readdir'
