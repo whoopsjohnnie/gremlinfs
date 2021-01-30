@@ -11,7 +11,7 @@ import contextlib
 import addict
 from addict import Dict
 
-from .gremlinfslog import GremlinFSLogger
+from .common.log import GremlinFSLogger
 
 # vertices get, post
 # vertices properties get

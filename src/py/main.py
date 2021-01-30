@@ -13,7 +13,7 @@ from fuse import FuseOSError
 # 
 # from gfs.gremlinfs import GremlinFSLogger
 
-from gfs.gremlinfslog import GremlinFSLogger
+from gfs.common.log import GremlinFSLogger
 from gfs.gremlinfslib import GremlinFS
 
 from gfs.gremlinfs import GremlinFSOperations

@@ -47,8 +47,8 @@ from fuse import FuseOSError
 # import pika
 
 # 
-from .gremlinfslog import GremlinFSLogger
-from .gremlinfsobj import GremlinFSObj
+from .common.log import GremlinFSLogger
+from .common.obj import GremlinFSObj
 
 # from .gremlinfsapi import GremlinFSAPI
 # from .gremlinfsapi import GremlinFSCachingAPI
