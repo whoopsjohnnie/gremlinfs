@@ -53,10 +53,10 @@ from gfs.common.obj import GFSObj
 # from gfs.api.common.api import GFSAPI
 # from gfs.api.common.api import GFSCachingAPI
 
-from gfs.gremlinfslib import GremlinFS
-from gfs.gremlinfslib import GFSBase
-from gfs.gremlinfslib import GremlinFSUtils
-from gfs.gremlinfslib import GremlinFSConfig
+from gfs.gfs import GremlinFS
+from gfs.gfs import GFSBase
+from gfs.gfs import GremlinFSUtils
+from gfs.gfs import GremlinFSConfig
 
 from gfs.model.vertex import GFSVertex
 from gfs.model.edge import GFSEdge

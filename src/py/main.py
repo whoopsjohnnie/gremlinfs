@@ -11,13 +11,13 @@ from fuse import Operations
 from fuse import FuseOSError
 
 # 
-# from gfs.gremlinfs import GFSLogger
+# from gfs.gfso import GFSLogger
 
 from gfs.common.log import GFSLogger
-from gfs.gremlinfslib import GremlinFS
+from gfs.gfs import GremlinFS
 
-from gfs.gremlinfs import GremlinFSOperations
-# from gfs.gremlinfs import GremlinFSCachingOperations
+from gfs.gfso import GremlinFSOperations
+# from gfs.gfso import GremlinFSCachingOperations
 
 logging.basicConfig(level=logging.INFO)
 # logging.basicConfig(level=logging.DEBUG)
