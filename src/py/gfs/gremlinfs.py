@@ -58,8 +58,8 @@ from gfs.gremlinfslib import GFSBase
 from gfs.gremlinfslib import GremlinFSUtils
 from gfs.gremlinfslib import GremlinFSConfig
 
-from gfs.model.vertex import GremlinFSVertex
-from gfs.model.edge import GremlinFSEdge
+from gfs.model.vertex import GFSVertex
+from gfs.model.edge import GFSEdge
 
 # 
 # 
@@ -163,7 +163,7 @@ class GremlinFSPath(GFSBase):
         if not node:
             root = None
             if GremlinFS.operations().config("fs_root", None):
-                root = GremlinFSVertex.load(
+                root = GFSVertex.load(
                     GremlinFS.operations().config("fs_root", None)
                 )
             node = root
@@ -181,7 +181,7 @@ class GremlinFSPath(GFSBase):
 
         nodes = None
         if node:
-            nodes = GremlinFSVertex.fromVs(
+            nodes = GFSVertex.fromVs(
                 GremlinFS.operations().api().verticesWithEdge(
                     "in", 
                     node.get("id")
@@ -189,7 +189,7 @@ class GremlinFSPath(GFSBase):
             )
 
         else:
-            nodes = GremlinFSVertex.fromVs(
+            nodes = GFSVertex.fromVs(
                 GremlinFS.operations().api().verticesWithoutEdge(
                     "in"
                 )
@@ -208,7 +208,7 @@ class GremlinFSPath(GFSBase):
         node = None
 
         if parent and nodeid:
-            nodes = GremlinFSVertex.fromVs(
+            nodes = GFSVertex.fromVs(
                 GremlinFS.operations().api().verticesWithEdge(
                     "in", 
                     parent.get("id")
@@ -221,7 +221,7 @@ class GremlinFSPath(GFSBase):
                         break
 
         elif nodeid:
-            node = GremlinFSVertex.load( nodeid )
+            node = GFSVertex.load( nodeid )
 
         elif path:
             node = GremlinFSPath.atpath( path )
@@ -233,7 +233,7 @@ class GremlinFSPath(GFSBase):
 
         root = None
         if GremlinFS.operations().config("fs_root", None):
-            root = GremlinFSVertex.load(
+            root = GFSVertex.load(
                 GremlinFS.operations().config("fs_root", None)
             )
 
@@ -541,7 +541,7 @@ class GremlinFSPath(GFSBase):
 
         root = None
         if self.config("fs_root"):
-            root = GremlinFSVertex.load(
+            root = GFSVertex.load(
                 self.config("fs_root")
             )
 
@@ -838,17 +838,17 @@ class GremlinFSPath(GFSBase):
         # el
         if self._path == "atpath":
 
-            newname = GremlinFSVertex.infer("name", self._name)
-            newlabel = GremlinFSVertex.infer("label", self._name, GremlinFS.operations().defaultFolderLabel())
-            newlabel = GremlinFSVertex.label(newname, newlabel, "folder", GremlinFS.operations().defaultFolderLabel())
-            newuuid = GremlinFSVertex.infer("uuid", self._name)
+            newname = GFSVertex.infer("name", self._name)
+            newlabel = GFSVertex.infer("label", self._name, GremlinFS.operations().defaultFolderLabel())
+            newlabel = GFSVertex.label(newname, newlabel, "folder", GremlinFS.operations().defaultFolderLabel())
+            newuuid = GFSVertex.infer("uuid", self._name)
             parent = self.parent()
 
             if not newname:
                 raise FuseOSError(errno.ENOENT)
 
             parent = self.parent()
-            newfolder = GremlinFSVertex.make(
+            newfolder = GFSVertex.make(
                 name = newname,
                 label = newlabel,
                 uuid = newuuid
@@ -871,10 +871,10 @@ class GremlinFSPath(GFSBase):
 
         elif self._path == "vertex":
 
-            newname = GremlinFSVertex.infer("name", self._name)
-            newlabel = GremlinFSVertex.infer("label", self._name, "vertex")
-            newlabel = GremlinFSVertex.label(newname, newlabel, "file", "vertex")
-            newuuid = GremlinFSVertex.infer("uuid", self._name)
+            newname = GFSVertex.infer("name", self._name)
+            newlabel = GFSVertex.infer("label", self._name, "vertex")
+            newlabel = GFSVertex.label(newname, newlabel, "file", "vertex")
+            newuuid = GFSVertex.infer("uuid", self._name)
             parent = self.parent()
 
             # Do not create an A vertex in /V/B, unless A is vertex
@@ -887,7 +887,7 @@ class GremlinFSPath(GFSBase):
 
             if GremlinFS.operations().isFolderLabel(newlabel):
                 # newfolder = 
-                GremlinFSVertex.make(
+                GFSVertex.make(
                     name = newname,
                     label = newlabel,
                     uuid = newuuid
@@ -899,7 +899,7 @@ class GremlinFSPath(GFSBase):
 
             else:
                 # newfile = 
-                GremlinFSVertex.make(
+                GFSVertex.make(
                     name = newname,
                     label = newlabel,
                     uuid = newuuid
@@ -959,7 +959,7 @@ class GremlinFSPath(GFSBase):
 
             nodes = None
             if root:
-                nodes = GremlinFSVertex.fromVs(
+                nodes = GFSVertex.fromVs(
                     GremlinFS.operations().api().verticesWithEdge(
                         "in", 
                         root.get("id")
@@ -967,7 +967,7 @@ class GremlinFSPath(GFSBase):
                 )
 
             else:
-                nodes = GremlinFSVertex.fromVs(
+                nodes = GFSVertex.fromVs(
                     GremlinFS.operations().api().verticesWithoutEdge(
                         "in"
                     )
@@ -986,7 +986,7 @@ class GremlinFSPath(GFSBase):
                 self.config("vertex_folder")
             ])
             parent = self.node()
-            nodes = GremlinFSVertex.fromVs(
+            nodes = GFSVertex.fromVs(
                 GremlinFS.operations().api().verticesWithEdge(
                     "in", 
                     parent.get("id")
@@ -1020,7 +1020,7 @@ class GremlinFSPath(GFSBase):
             if parent:
                 short = True
                 if label == "vertex":
-                    nodes = GremlinFSVertex.fromVs(
+                    nodes = GFSVertex.fromVs(
                         self.api().inEdgesOutVertices(
                             parent.get("id"), 
                             self.config("in_label"), 
@@ -1031,7 +1031,7 @@ class GremlinFSPath(GFSBase):
                     )
 
                 else:
-                    nodes = GremlinFSVertex.fromVs(
+                    nodes = GFSVertex.fromVs(
                         self.api().inEdgesOutVertices(
                             parent.get("id"), 
                             self.config("in_label"), 
@@ -1044,12 +1044,12 @@ class GremlinFSPath(GFSBase):
 
             else:
                 if label == "vertex":
-                    nodes = GremlinFSVertex.fromVs(
+                    nodes = GFSVertex.fromVs(
                         self.api().vertices()
                     )
 
                 else:
-                    nodes = GremlinFSVertex.fromVs(
+                    nodes = GFSVertex.fromVs(
                         self.api().vertices(
                             label
                         )
@@ -1075,7 +1075,7 @@ class GremlinFSPath(GFSBase):
                 GremlinFS.operations().config("out_edge_folder", "EO"),
             ])
 
-            edges = GremlinFSEdge.fromEs(
+            edges = GFSEdge.fromEs(
                 self.api().outEdges(
                     node.get("id")
                 )
@@ -1107,7 +1107,7 @@ class GremlinFSPath(GFSBase):
                 label = "vertex"
 
             node = GremlinFSUtils.found( self.node() )
-            edges = GremlinFSEdge.fromEs(
+            edges = GFSEdge.fromEs(
                 self.api().inEdges(
                     node.get("id")
                 )
@@ -1127,7 +1127,7 @@ class GremlinFSPath(GFSBase):
                 label = "vertex"
 
             node = GremlinFSUtils.found( self.node() )
-            edges = GremlinFSEdge.fromEs(
+            edges = GFSEdge.fromEs(
                 self.api().outEdges(
                     node.get("id")
                 )
@@ -1202,16 +1202,16 @@ class GremlinFSPath(GFSBase):
         # el
         if self._path == "atpath":
 
-            newname = GremlinFSVertex.infer("name", self._name)
-            newlabel = GremlinFSVertex.infer("label", self._name, "vertex")
-            newlabel = GremlinFSVertex.label(newname, newlabel, "file", "vertex")
-            newuuid = GremlinFSVertex.infer("uuid", self._name)
+            newname = GFSVertex.infer("name", self._name)
+            newlabel = GFSVertex.infer("label", self._name, "vertex")
+            newlabel = GFSVertex.label(newname, newlabel, "file", "vertex")
+            newuuid = GFSVertex.infer("uuid", self._name)
             parent = self.parent()
 
             if not newname:
                 raise FuseOSError(errno.ENOENT)
 
-            newfile = GremlinFSVertex.make(
+            newfile = GFSVertex.make(
                 name = newname,
                 label = newlabel,
                 uuid = newuuid
@@ -1383,8 +1383,8 @@ class GremlinFSPath(GFSBase):
             source = node
             target = sourcematch.node()
 
-            label = GremlinFSEdge.infer("label", self._vertexproperty, None)
-            name = GremlinFSEdge.infer("name", self._vertexproperty, None)
+            label = GFSEdge.infer("label", self._vertexproperty, None)
+            name = GFSEdge.infer("name", self._vertexproperty, None)
 
             if not label and name:
                 label = name
@@ -1424,8 +1424,8 @@ class GremlinFSPath(GFSBase):
             source = sourcematch.node()
             target = node
 
-            label = GremlinFSEdge.infer("label", self._vertexedge, None)
-            name = GremlinFSEdge.infer("name", self._vertexedge, None)
+            label = GFSEdge.infer("label", self._vertexedge, None)
+            name = GFSEdge.infer("name", self._vertexedge, None)
 
             if not label and name:
                 label = name
@@ -1452,8 +1452,8 @@ class GremlinFSPath(GFSBase):
             source = node
             target = sourcematch.node()
 
-            label = GremlinFSEdge.infer("label", self._vertexedge, None)
-            name = GremlinFSEdge.infer("name", self._vertexedge, None)
+            label = GFSEdge.infer("label", self._vertexedge, None)
+            name = GFSEdge.infer("name", self._vertexedge, None)
 
             if not label and name:
                 label = name
@@ -1587,8 +1587,8 @@ class GremlinFSPath(GFSBase):
 
             node = self.node()
 
-            label = GremlinFSEdge.infer("label", self._vertexedge, None)
-            name = GremlinFSEdge.infer("name", self._vertexedge, None)
+            label = GFSEdge.infer("label", self._vertexedge, None)
+            name = GFSEdge.infer("name", self._vertexedge, None)
 
             if not label and name:
                 label = name
@@ -1640,8 +1640,8 @@ class GremlinFSPath(GFSBase):
 
             node = self.node()
 
-            label = GremlinFSEdge.infer("label", self._vertexedge, None)
-            name = GremlinFSEdge.infer("name", self._vertexedge, None)
+            label = GFSEdge.infer("label", self._vertexedge, None)
+            name = GFSEdge.infer("name", self._vertexedge, None)
 
             if not label and name:
                 label = name
@@ -1681,8 +1681,8 @@ class GremlinFSPath(GFSBase):
 
             node = self.node()
 
-            label = GremlinFSEdge.infer("label", self._vertexedge, None)
-            name = GremlinFSEdge.infer("name", self._vertexedge, None)
+            label = GFSEdge.infer("label", self._vertexedge, None)
+            name = GFSEdge.infer("name", self._vertexedge, None)
 
             if not label and name:
                 label = name

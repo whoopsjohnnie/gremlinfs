@@ -59,9 +59,9 @@ from gfs.api.common.api import GFSCachingAPI
 
 
 
-class GremlinFSVertex(GremlinFSNode):
+class GFSVertex(GFSNode):
 
-    logger = GFSLogger.getLogger("GremlinFSVertex")
+    logger = GFSLogger.getLogger("GFSVertex")
 
     @classmethod
     def parse(clazz, id):
@@ -178,7 +178,7 @@ class GremlinFSVertex(GremlinFSNode):
             "label" in parts:
             try:
                 if parts["label"] == "vertex":
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         GremlinFS.operations().api().vertices(
                             None, 
                             {
@@ -187,7 +187,7 @@ class GremlinFSVertex(GremlinFSNode):
                         )
                     )
                 else:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         GremlinFS.operations().api().vertices(
                             parts["label"], 
                             {
@@ -204,7 +204,7 @@ class GremlinFSVertex(GremlinFSNode):
             "label" in parts:
             try:
                 if parts["label"] == "vertex":
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         GremlinFS.operations().api().vertices(
                             None, 
                             {
@@ -213,7 +213,7 @@ class GremlinFSVertex(GremlinFSNode):
                         )
                     )
                 else:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         GremlinFS.operations().api().vertices(
                             parts["label"], 
                             {
@@ -228,7 +228,7 @@ class GremlinFSVertex(GremlinFSNode):
         elif parts and \
             "uuid" in parts:
             try:
-                return GremlinFSVertex.fromV(
+                return GFSVertex.fromV(
                     GremlinFS.operations().api().vertices(
                         None, 
                         {
@@ -244,7 +244,7 @@ class GremlinFSVertex(GremlinFSNode):
         # OrientDB doesn't like invalid ID queries?
         elif id and ":" in id:
             try:
-                return GremlinFSVertex.fromV(
+                return GFSVertex.fromV(
                     GremlinFS.operations().api().vertex(
                         id
                     )
@@ -258,26 +258,26 @@ class GremlinFSVertex(GremlinFSNode):
     @classmethod
     def fromV(clazz, v, names = []):
         if names:
-            # return GremlinFSVertex.fromVal(
-            return GremlinFSVertex.fromMap(
+            # return GFSVertex.fromVal(
+            return GFSVertex.fromMap(
                 v # .valueMap(*names).next()
             )
 
         else:
-            return GremlinFSVertex.fromMap(
+            return GFSVertex.fromMap(
                 v # .valueMap(True).next()
             )
 
     @classmethod
     def fromVs(clazz, vs, names = []):
         if names:
-            # return GremlinFSVertex.fromVals(
-            return GremlinFSVertex.fromMaps(
+            # return GFSVertex.fromVals(
+            return GFSVertex.fromMaps(
                 vs # .valueMap(*names).toList()
             )
 
         else:
-            return GremlinFSVertex.fromMaps(
+            return GFSVertex.fromMaps(
                 vs # .valueMap(True).toList()
             )
 
@@ -285,8 +285,8 @@ class GremlinFSVertex(GremlinFSNode):
 
         node = self
 
-        label = GremlinFSEdge.infer("label", edgeid, None)
-        name = GremlinFSEdge.infer("name", edgeid, None)
+        label = GFSEdge.infer("label", edgeid, None)
+        name = GFSEdge.infer("name", edgeid, None)
 
         if not label and name:
             label = name
@@ -297,7 +297,7 @@ class GremlinFSVertex(GremlinFSNode):
             # try:
 
             if ine:
-                return GremlinFSEdge.fromEs(
+                return GFSEdge.fromEs(
                     self.api().inEdges(
                         node.get("id"), 
                         label, {
@@ -307,7 +307,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
             else:
-                return GremlinFSEdge.fromEs(
+                return GFSEdge.fromEs(
                     self.api().outEdges(
                         node.get("id"), 
                         label, {
@@ -325,7 +325,7 @@ class GremlinFSVertex(GremlinFSNode):
             # try:
 
             if ine:
-                return GremlinFSEdge.fromEs(
+                return GFSEdge.fromEs(
                     self.api().inEdges(
                         node.get("id"), 
                         label
@@ -333,7 +333,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
             else:
-                return GremlinFSEdge.fromEs(
+                return GFSEdge.fromEs(
                     self.api().outEdges(
                         node.get("id"), 
                         label
@@ -349,14 +349,14 @@ class GremlinFSVertex(GremlinFSNode):
             # try:
 
             if ine:
-                return GremlinFSEdge.fromEs(
+                return GFSEdge.fromEs(
                     self.api().inEdges(
                         node.get("id")
                     )
                 )
 
             else:
-                return GremlinFSEdge.fromEs(
+                return GFSEdge.fromEs(
                     self.api().outEdges(
                         node.get("id")
                     )
@@ -370,8 +370,8 @@ class GremlinFSVertex(GremlinFSNode):
 
         node = self
 
-        label = GremlinFSEdge.infer("label", edgeid, None)
-        name = GremlinFSEdge.infer("name", edgeid, None)
+        label = GFSEdge.infer("label", edgeid, None)
+        name = GFSEdge.infer("name", edgeid, None)
 
         if not label and name:
             label = name
@@ -382,7 +382,7 @@ class GremlinFSVertex(GremlinFSNode):
             # try:
 
             if ine:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     self.api().inEdges(
                         node.get("id"), 
                         label, {
@@ -392,7 +392,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
             else:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     self.api().outEdges(
                         node.get("id"), 
                         label, {
@@ -410,7 +410,7 @@ class GremlinFSVertex(GremlinFSNode):
             # try:
 
             if ine:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     self.api().inEdges(
                         node.get("id"), 
                         label
@@ -418,7 +418,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
             else:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     self.api().outEdges(
                         node.get("id"), 
                         label
@@ -435,8 +435,8 @@ class GremlinFSVertex(GremlinFSNode):
 
         node = self
 
-        label = GremlinFSEdge.infer("label", edgeid, None)
-        name = GremlinFSEdge.infer("name", edgeid, None)
+        label = GFSEdge.infer("label", edgeid, None)
+        name = GFSEdge.infer("name", edgeid, None)
 
         if not label and name:
             label = name
@@ -448,7 +448,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             if ine:
                 if inv:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().inEdgesInVertices(
                             node.get("id"), 
                             label, {
@@ -458,7 +458,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().inEdgesOutVertices(
                             node.get("id"), 
                             label, {
@@ -469,7 +469,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             else:
                 if inv:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().outEdgesInVertices(
                             node.get("id"), 
                             label, {
@@ -479,7 +479,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().outEdgesOutVertices(
                             node.get("id"), 
                             label, {
@@ -498,7 +498,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             if ine:
                 if inv:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().inEdgesInVertices(
                             node.get("id"), 
                             label
@@ -506,7 +506,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().inEdgesOutVertices(
                             node.get("id"), 
                             label
@@ -515,7 +515,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             else:
                 if inv:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().outEdgesInVertices(
                             node.get("id"), 
                             label
@@ -523,7 +523,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().outEdgesOutVertices(
                             node.get("id"), 
                             label
@@ -540,14 +540,14 @@ class GremlinFSVertex(GremlinFSNode):
 
             if ine:
                 if inv:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().inEdgesInVertices(
                             node.get("id")
                         )
                     )
 
                 else:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().inEdgesOutVertices(
                             node.get("id")
                         )
@@ -555,14 +555,14 @@ class GremlinFSVertex(GremlinFSNode):
 
             else:
                 if inv:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().outEdgesInVertices(
                             node.get("id")
                         )
                     )
 
                 else:
-                    return GremlinFSVertex.fromVs(
+                    return GFSVertex.fromVs(
                         self.api().outEdgesOutVertices(
                             node.get("id")
                         )
@@ -576,8 +576,8 @@ class GremlinFSVertex(GremlinFSNode):
 
         node = self
 
-        label = GremlinFSEdge.infer("label", edgeid, None)
-        name = GremlinFSEdge.infer("name", edgeid, None)
+        label = GFSEdge.infer("label", edgeid, None)
+        name = GFSEdge.infer("name", edgeid, None)
 
         if not label and name:
             label = name
@@ -589,7 +589,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             if ine:
                 if inv:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         self.api().inEdgesInVertices(
                             node.get("id"), 
                             label, {
@@ -599,7 +599,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         self.api().inEdgesOutVertices(
                             node.get("id"), 
                             label, {
@@ -610,7 +610,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             else:
                 if inv:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         self.api().outEdgesInVertices(
                             node.get("id"), 
                             label, {
@@ -620,7 +620,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         self.api().outEdgesOutVertices(
                             node.get("id"), 
                             label, {
@@ -639,7 +639,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             if ine:
                 if inv:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         self.api().inEdgesInVertices(
                             node.get("id"), 
                             label
@@ -647,7 +647,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         self.api().inEdgesOutVertices(
                             node.get("id"), 
                             label
@@ -656,7 +656,7 @@ class GremlinFSVertex(GremlinFSNode):
 
             else:
                 if inv:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         self.api().outEdgesInVertices(
                             node.get("id"), 
                             label
@@ -664,7 +664,7 @@ class GremlinFSVertex(GremlinFSNode):
                     )
 
                 else:
-                    return GremlinFSVertex.fromV(
+                    return GFSVertex.fromV(
                         self.api().outEdgesOutVertices(
                             node.get("id"), 
                             label
@@ -745,7 +745,7 @@ class GremlinFSVertex(GremlinFSNode):
         label = node.get('label', None)
         name = node.get('name', None)
 
-        newnode = GremlinFSVertex.fromV(
+        newnode = GFSVertex.fromV(
             self.api().createVertex(
                 label, {
                     "name": name
@@ -826,7 +826,7 @@ class GremlinFSVertex(GremlinFSNode):
         if not label:
             label = GremlinFS.operations().defaultFolderLabel()
 
-        newfolder = GremlinFSVertex.fromV(
+        newfolder = GFSVertex.fromV(
             self.api().createVertex(
                 label, {
                     "name": name
@@ -854,7 +854,7 @@ class GremlinFSVertex(GremlinFSNode):
         # try:
 
         if name:
-            newedge = GremlinFSEdge.fromE(
+            newedge = GFSEdge.fromE(
                 self.api().createEdge(
                     source.get("id"),
                     target.get("id"),
@@ -866,7 +866,7 @@ class GremlinFSVertex(GremlinFSNode):
             )
 
         else:
-            newedge = GremlinFSEdge.fromE(
+            newedge = GFSEdge.fromE(
                 self.api().createEdge(
                     source.get("id"),
                     target.get("id"),
@@ -897,7 +897,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         if name:
             if ine:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     self.api().inEdges(
                         node.get("id"), 
                         label, {
@@ -907,7 +907,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
             else:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     self.api().outEdges(
                         node.get("id"), 
                         label, {
@@ -918,7 +918,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         else:
             if ine:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     self.api().inEdges(
                         node.get("id"), 
                         label
@@ -926,7 +926,7 @@ class GremlinFSVertex(GremlinFSNode):
                 )
 
             else:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     self.api().outEdges(
                         node.get("id"), 
                         label
@@ -958,7 +958,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         if name:
             if ine:
-                # GremlinFSEdge.fromE(
+                # GFSEdge.fromE(
                 # nodeid, edgelabel, edgeprops
                 self.api().deleteVertexInEdge(
                     node.get("id"),
@@ -969,7 +969,7 @@ class GremlinFSVertex(GremlinFSNode):
                 # )
 
             else:
-                # GremlinFSEdge.fromE(
+                # GFSEdge.fromE(
                 # nodeid, edgelabel, edgeprops
                 self.api().deleteVertexOutEdge(
                     node.get("id"),
@@ -981,7 +981,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         else:
             if ine:
-                # GremlinFSEdge.fromE(
+                # GFSEdge.fromE(
                 self.api().deleteVertexInEdge(
                     node.get("id"),
                     label
@@ -989,7 +989,7 @@ class GremlinFSVertex(GremlinFSNode):
                 # )
 
             else:
-                # GremlinFSEdge.fromE(
+                # GFSEdge.fromE(
                 self.api().deleteVertexOutEdge(
                     node.get("id"),
                     label
@@ -1008,7 +1008,7 @@ class GremlinFSVertex(GremlinFSNode):
 
         # try:
 
-        return GremlinFSVertex.fromMap(
+        return GFSVertex.fromMap(
             self.api().inEdgeInVertices(
                 node.get("id"),
                 self.config("in_label")

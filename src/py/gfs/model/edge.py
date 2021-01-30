@@ -59,9 +59,9 @@ from gfs.api.common.api import GFSCachingAPI
 
 
 
-class GremlinFSEdge(GremlinFSNode):
+class GFSEdge(GFSNode):
 
-    logger = GFSLogger.getLogger("GremlinFSEdge")
+    logger = GFSLogger.getLogger("GFSEdge")
 
     @classmethod
     def parse(clazz, id):
@@ -95,14 +95,14 @@ class GremlinFSEdge(GremlinFSNode):
     @classmethod
     def load(clazz, id):
 
-        parts = GremlinFSEdge.parse(id)
+        parts = GFSEdge.parse(id)
         if parts and \
             "uuid" in parts and \
             "name" in parts and \
             "label" in parts:
             try:
                 if parts["label"] == "vertex":
-                    return GremlinFSEdge.fromE(
+                    return GFSEdge.fromE(
                         GremlinFS.operations().api().edges(
                             None, 
                             {
@@ -111,7 +111,7 @@ class GremlinFSEdge(GremlinFSNode):
                         )
                     )
                 else:
-                    return GremlinFSEdge.fromE(
+                    return GFSEdge.fromE(
                         GremlinFS.operations().api().edges(
                             parts["label"], 
                             {
@@ -128,7 +128,7 @@ class GremlinFSEdge(GremlinFSNode):
             "label" in parts:
             try:
                 if parts["label"] == "vertex":
-                    return GremlinFSEdge.fromE(
+                    return GFSEdge.fromE(
                         GremlinFS.operations().api().edges(
                             None, 
                             {
@@ -137,7 +137,7 @@ class GremlinFSEdge(GremlinFSNode):
                         )
                     )
                 else:
-                    return GremlinFSEdge.fromE(
+                    return GFSEdge.fromE(
                         GremlinFS.operations().api().edges(
                             parts["label"], 
                             {
@@ -152,7 +152,7 @@ class GremlinFSEdge(GremlinFSNode):
         elif parts and \
             "uuid" in parts:
             try:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     GremlinFS.operations().api().edges(
                         None, 
                         {
@@ -168,7 +168,7 @@ class GremlinFSEdge(GremlinFSNode):
         # OrientDB doesn't like invalid ID queries?
         elif id and ":" in id:
             try:
-                return GremlinFSEdge.fromE(
+                return GFSEdge.fromE(
                     GremlinFS.operations().api().edge(
                         id
                     )
@@ -181,7 +181,7 @@ class GremlinFSEdge(GremlinFSNode):
 
 #     @classmethod
 #     def fromMap(clazz, map):
-#         node = GremlinFSEdge()
+#         node = GFSEdge()
 #         node.fromobj(map)
 #         return node
 # 
@@ -189,20 +189,20 @@ class GremlinFSEdge(GremlinFSNode):
 #     def fromMaps(clazz, maps):
 #         nodes = gfslist([])
 #         for map in maps:
-#             node = GremlinFSEdge()
+#             node = GFSEdge()
 #             node.fromobj(map)
 #             nodes.append(node)
 #         return nodes.tolist()
 
 #     @classmethod
 #     def fromE(clazz, e):
-#         return GremlinFSEdge.fromMap(
+#         return GFSEdge.fromMap(
 #             e.valueMap(True).next()
 #         )
 # 
 #     @classmethod
 #     def fromEs(clazz, es):
-#         return GremlinFSEdge.fromMaps(
+#         return GFSEdge.fromMaps(
 #             es.valueMap(True).toList()
 #         )
 
@@ -214,7 +214,7 @@ class GremlinFSEdge(GremlinFSNode):
         # if obj and obj['value']:
         #     obj = obj['value']
 
-        edge = GremlinFSEdge();
+        edge = GFSEdge();
         edge.set('id', GremlinFSUtils.value( obj.id ) );
         edge.set('label', obj.label);
         edge.set('outV', GremlinFSUtils.value( obj.outV.id ) );
@@ -232,7 +232,7 @@ class GremlinFSEdge(GremlinFSNode):
         # for( var i=0; i<objs2.length; i++ ) {
         #     var obj = objs2[i];
         for obj in objs2:
-            edge = GremlinFSEdge();
+            edge = GFSEdge();
             edge.set('id', GremlinFSUtils.value( obj.id ) );
             edge.set('label', obj.label);
             edge.set('outV', GremlinFSUtils.value( obj.outV.id ) );
@@ -251,14 +251,14 @@ class GremlinFSEdge(GremlinFSNode):
             # try:
 
             if inv:
-                return GremlinFSVertex.fromV(
+                return GFSVertex.fromV(
                     self.api().inVertices(
                         edge.get("id")
                     )
                 )
 
             else:
-                return GremlinFSVertex.fromV(
+                return GFSVertex.fromV(
                     self.api().outVertices(
                         edge.get("id")
                     )

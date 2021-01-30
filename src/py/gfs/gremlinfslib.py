@@ -50,8 +50,8 @@ from gfs.error.error import GFSNotExistsError
 from gfs.error.error import GFSIsFileError
 from gfs.error.error import GFSIsFolderError
 
-from gfs.model.vertex import GremlinFSVertex
-from gfs.model.edge import GremlinFSEdge
+from gfs.model.vertex import GFSVertex
+from gfs.model.edge import GFSEdge
 
 # from gfs.api.common.api import GFSAPI
 from gfs.api.common.api import GFSCachingAPI
@@ -549,7 +549,7 @@ class GremlinFS():
 
         try:
 
-            match = GremlinFSVertex.fromVs(
+            match = GFSVertex.fromVs(
                 self.api().vertices(
                     type_name, {
                         'namespace': namespace,

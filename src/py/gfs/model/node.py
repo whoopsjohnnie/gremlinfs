@@ -59,9 +59,9 @@ from gfs.api.common.api import GFSCachingAPI
 
 
 
-class GremlinFSNode(GFSBase):
+class GFSNode(GFSBase):
 
-    logger = GFSLogger.getLogger("GremlinFSNode")
+    logger = GFSLogger.getLogger("GFSNode")
 
     @classmethod
     def parse(clazz, id):
