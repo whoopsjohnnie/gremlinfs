@@ -3,9 +3,6 @@
 # All rights reserved.
 # 
 
-from gremlin_python.structure.graph import Graph, Vertex, Edge
-from gremlin_python.process.traversal import T, P, Operator
-
 from gfs.common.log import GFSLogger
 
 from gfs.error.error import GFSError

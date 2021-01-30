@@ -27,22 +27,8 @@ try:
 except ImportError:
     from io import StringIO
 
-# 3.3.0
-# http://tinkerpop.apache.org/docs/3.3.0-SNAPSHOT/reference/#gremlin-python
-# from gremlin_python import statics
-# from gremlin_python.structure.graph import Graph, Vertex, Edge
-# from gremlin_python.process.graph_traversal import __
-# from gremlin_python.process.strategies import *
-# from gremlin_python.process.traversal import T, P, Operator
-# from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
-
-# 
-# import pika
-
 # 
 from gfs.common.log import GFSLogger
-from gfs.common.obj import GFSObj
-from gfs.common.base import GFSBase
 
 from gfs.error.error import GFSError
 from gfs.error.error import GFSExistsError
@@ -50,20 +36,8 @@ from gfs.error.error import GFSNotExistsError
 from gfs.error.error import GFSIsFileError
 from gfs.error.error import GFSIsFolderError
 
-from gfs.model.vertex import GFSVertex
-from gfs.model.edge import GFSEdge
-
-# from gfs.api.common.api import GFSAPI
-from gfs.api.common.api import GFSCachingAPI
-
-from gfs.lib.path import GremlinFSPath
-from gfs.lib.util import GremlinFSUtils
-from gfs.lib.event import GremlinFSEvent
-from gfs.lib.config import GremlinFSConfig
-
-# 
-# 
-# import config
+# from gfs.api.client.api import GFSAPI
+from gfs.api.client.api import GFSCachingAPI
 
 
 
@@ -130,6 +104,10 @@ class GremlinFS():
         # self.logger.debug(' GremlinFS gfs password: ' + self.gfs_password)
         self.logger.debug(' GremlinFS gfs URL: ' + self.gfs_url)
 
+        # Cannot include at top
+        from gfs.lib.util import GremlinFSUtils
+        from gfs.lib.config import GremlinFSConfig
+
         self._config = GremlinFSConfig(
 
             # mount_point = mount_point,
@@ -171,6 +149,8 @@ class GremlinFS():
         return self._config.get(key, default)
 
     def utils(self):
+        # Cannot include at top
+        from gfs.lib.util import GremlinFSUtils
         return GremlinFSUtils.utils()
 
     def getfs(self, fsroot, fsinit = False):
@@ -187,6 +167,9 @@ class GremlinFS():
 
         import socket
         import platform
+
+        # Cannot include at top
+        from gfs.model.vertex import GFSVertex
 
         client_id = self.config("client_id")
         namespace = self.config("fs_ns")

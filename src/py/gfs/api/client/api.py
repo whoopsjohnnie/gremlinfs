@@ -11,7 +11,7 @@ import contextlib
 import addict
 from addict import Dict
 
-from .common.log import GFSLogger
+from gfs.common.log import GFSLogger
 
 # vertices get, post
 # vertices properties get

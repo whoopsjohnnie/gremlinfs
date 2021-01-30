@@ -34,24 +34,8 @@ from fuse import FUSE
 from fuse import Operations
 from fuse import FuseOSError
 
-# 3.3.0
-# http://tinkerpop.apache.org/docs/3.3.0-SNAPSHOT/reference/#gremlin-python
-# from gremlin_python import statics
-# from gremlin_python.structure.graph import Graph, Vertex, Edge
-# from gremlin_python.process.graph_traversal import __
-# from gremlin_python.process.strategies import *
-# from gremlin_python.process.traversal import T, P, Operator
-# from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
-
-# 
-# import pika
-
 # 
 from gfs.common.log import GFSLogger
-from gfs.common.obj import GFSObj
-
-# from gfs.api.common.api import GFSAPI
-# from gfs.api.common.api import GFSCachingAPI
 
 from gfs.model.vertex import GFSVertex
 from gfs.model.edge import GFSEdge
@@ -61,15 +45,8 @@ from gfs.lib.util import GremlinFSUtils
 from gfs.lib.event import GremlinFSEvent
 from gfs.lib.config import GremlinFSConfig
 
-# 
-# 
-# import config
-
-
-
-# 
-logging.basicConfig(level=logging.INFO)
-# logging.basicConfig(level=logging.DEBUG)
+# from gfs.api.client.api import GFSAPI
+from gfs.api.client.api import GFSCachingAPI
 
 
 
