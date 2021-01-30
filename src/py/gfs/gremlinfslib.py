@@ -42,6 +42,7 @@ except ImportError:
 # 
 from gfs.common.log import GFSLogger
 from gfs.common.obj import GFSObj
+from gfs.common.base import GremlinFSBase
 
 from gfs.error.error import GremlinFSError
 from gfs.error.error import GremlinFSExistsError
@@ -55,18 +56,6 @@ from gfs.api.common.api import GFSCachingAPI
 # 
 # 
 # import config
-
-
-
-class GremlinFSBase(GFSObj):
-
-    logger = GFSLogger.getLogger("GremlinFSBase")
-
-    def __init__(self, **kwargs):
-        self.setall(kwargs)
-
-    def property(self, name, default = None, prefix = None):
-        return self.get(name, default, prefix = prefix)
 
 
 
