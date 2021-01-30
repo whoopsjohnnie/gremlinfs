@@ -47,18 +47,19 @@ from fuse import FuseOSError
 # import pika
 
 # 
-from .common.log import GFSLogger
-from .common.obj import GFSObj
+from gfs.common.log import GFSLogger
+from gfs.common.obj import GFSObj
 
-# from .api.common.api import GFSAPI
-# from .api.common.api import GFSCachingAPI
+# from gfs.api.common.api import GFSAPI
+# from gfs.api.common.api import GFSCachingAPI
 
-from .gremlinfslib import GremlinFS
-from .gremlinfslib import GremlinFSBase
-from .gremlinfslib import GremlinFSUtils
-from .gremlinfslib import GremlinFSConfig
+from gfs.gremlinfslib import GremlinFS
+from gfs.gremlinfslib import GremlinFSBase
+from gfs.gremlinfslib import GremlinFSUtils
+from gfs.gremlinfslib import GremlinFSConfig
 
-from .gremlinfslib import GremlinFSVertex, GremlinFSEdge
+from gfs.model.vertex import GremlinFSVertex
+from gfs.model.edge import GremlinFSEdge
 
 # 
 # 
