@@ -30,7 +30,7 @@ except ImportError:
 
 
 
-class GremlinFSObj():
+class GFSObj():
 
     def __init__(self, **kwargs):
 
@@ -96,7 +96,7 @@ class GremlinFSObj():
 
 
 
-class GremlinFSList():
+class GFSList():
 
     def __init__(self, **kwargs):
         self._list = []
@@ -120,7 +120,7 @@ class GremlinFSList():
 
 
 
-class GremlinFSMap(GremlinFSObj):
+class GFSMap(GFSObj):
 
     def __init__(self, **kwargs):
 
@@ -145,24 +145,24 @@ class GremlinFSMap(GremlinFSObj):
 
 
 def gfslist(list = []):
-    gfslist = GremlinFSList()
+    gfslist = GFSList()
     gfslist.fromlist(list)
     return gfslist
 
 
 
 def gfsmap(map = {}):
-    gfsmap = GremlinFSMap()
+    gfsmap = GFSMap()
     gfsmap.frommap(map)
     return gfsmap
 
 
 
 __all__ = [
-    'GremlinFSObj',
-    'GremlinFSList',
+    'GFSObj',
+    'GFSList',
     'gfslist',
     'gfsmap'
 ]
 
-__default__ = 'GremlinFSObj'
+__default__ = 'GFSObj'

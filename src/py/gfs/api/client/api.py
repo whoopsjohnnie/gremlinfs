@@ -11,7 +11,7 @@ import contextlib
 import addict
 from addict import Dict
 
-from .common.log import GremlinFSLogger
+from .common.log import GFSLogger
 
 # vertices get, post
 # vertices properties get
@@ -37,7 +37,7 @@ class GFSAPIError(Exception):
 
 class GFSAPI():
 
-    logger = GremlinFSLogger.getLogger("GFSAPI")
+    logger = GFSLogger.getLogger("GFSAPI")
 
     def __init__(
         self,
@@ -672,7 +672,7 @@ class GFSAPI():
 
 class GFSCachingAPI(GFSAPI):
 
-    logger = GremlinFSLogger.getLogger("GFSCachingAPI")
+    logger = GFSLogger.getLogger("GFSCachingAPI")
 
     def __init__(
         self,

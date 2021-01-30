@@ -11,9 +11,9 @@ from fuse import Operations
 from fuse import FuseOSError
 
 # 
-# from gfs.gremlinfs import GremlinFSLogger
+# from gfs.gremlinfs import GFSLogger
 
-from gfs.common.log import GremlinFSLogger
+from gfs.common.log import GFSLogger
 from gfs.gremlinfslib import GremlinFS
 
 from gfs.gremlinfs import GremlinFSOperations
@@ -37,7 +37,7 @@ def main(
 
     try:
 
-        logger = GremlinFSLogger.getLogger("main")
+        logger = GFSLogger.getLogger("main")
 
         gfs = GremlinFS()
         gfs.configure(

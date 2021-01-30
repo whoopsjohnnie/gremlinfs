@@ -40,8 +40,8 @@ except ImportError:
 # import pika
 
 # 
-from .common.log import GremlinFSLogger
-from .common.obj import GremlinFSObj
+from .common.log import GFSLogger
+from .common.obj import GFSObj
 
 # from .api.common.api import GFSAPI
 from .api.common.api import GFSCachingAPI
@@ -87,9 +87,9 @@ class GremlinFSIsFolderError(GremlinFSError):
 
 
 
-class GremlinFSBase(GremlinFSObj):
+class GremlinFSBase(GFSObj):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSBase")
+    logger = GFSLogger.getLogger("GremlinFSBase")
 
     def __init__(self, **kwargs):
         self.setall(kwargs)
@@ -101,7 +101,7 @@ class GremlinFSBase(GremlinFSObj):
 
 class GremlinFSNode(GremlinFSBase):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSNode")
+    logger = GFSLogger.getLogger("GremlinFSNode")
 
     @classmethod
     def parse(clazz, id):
@@ -383,7 +383,7 @@ class GremlinFSNode(GremlinFSBase):
 
 class GremlinFSVertex(GremlinFSNode):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSVertex")
+    logger = GFSLogger.getLogger("GremlinFSVertex")
 
     @classmethod
     def parse(clazz, id):
@@ -1368,7 +1368,7 @@ class GremlinFSVertex(GremlinFSNode):
 
 class GremlinFSEdge(GremlinFSNode):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSEdge")
+    logger = GFSLogger.getLogger("GremlinFSEdge")
 
     @classmethod
     def parse(clazz, id):
@@ -1598,7 +1598,7 @@ class GremlinFSEdge(GremlinFSNode):
 
 class GremlinFSUtils(GremlinFSBase):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSUtils")
+    logger = GFSLogger.getLogger("GremlinFSUtils")
 
     @classmethod
     def value(clazz, value, default = None):
@@ -1868,7 +1868,7 @@ class GremlinFSUtils(GremlinFSBase):
 
 class GremlinFSEvent(GremlinFSBase):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSEvent")
+    logger = GFSLogger.getLogger("GremlinFSEvent")
 
     def __init__(self, **kwargs):
         self.setall(kwargs)
@@ -1880,7 +1880,7 @@ class GremlinFSEvent(GremlinFSBase):
 
 class GremlinFSConfig(GremlinFSBase):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSConfig")
+    logger = GFSLogger.getLogger("GremlinFSConfig")
 
     @classmethod
     def defaults(clazz):
@@ -1893,7 +1893,7 @@ class GremlinFSConfig(GremlinFSBase):
             # "gfs_password": None,
             "gfs_url": None,
 
-            "log_level": GremlinFSLogger.getLogLevel(),
+            "log_level": GFSLogger.getLogLevel(),
 
             "client_id": "0010",
             "fs_ns": "gfs1",
@@ -1958,7 +1958,7 @@ class GremlinFS():
     or the corresponding system call man page.
     '''
 
-    logger = GremlinFSLogger.getLogger("GremlinFS")
+    logger = GFSLogger.getLogger("GremlinFS")
 
     __instance = None
 

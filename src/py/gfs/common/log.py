@@ -8,11 +8,11 @@ logging.basicConfig(level=logging.INFO)
 # logging.basicConfig(level=logging.DEBUG)
 
 
-class GremlinFSLogger():
+class GFSLogger():
 
     @classmethod
     def getLogger(self, name):
-        return GremlinFSLogger(name)
+        return GFSLogger(name)
 
     @classmethod
     def getLogLevel(self):
@@ -46,7 +46,7 @@ class GremlinFSLogger():
 
 
 __all__ = [
-    'GremlinFSLogger'
+    'GFSLogger'
 ]
 
-__default__ = 'GremlinFSLogger'
+__default__ = 'GFSLogger'

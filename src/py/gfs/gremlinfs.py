@@ -47,8 +47,8 @@ from fuse import FuseOSError
 # import pika
 
 # 
-from .common.log import GremlinFSLogger
-from .common.obj import GremlinFSObj
+from .common.log import GFSLogger
+from .common.obj import GFSObj
 
 # from .api.common.api import GFSAPI
 # from .api.common.api import GFSCachingAPI
@@ -74,7 +74,7 @@ logging.basicConfig(level=logging.INFO)
 
 class GremlinFSPath(GremlinFSBase):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSPath")
+    logger = GFSLogger.getLogger("GremlinFSPath")
 
     @classmethod
     def paths(clazz):
@@ -2220,7 +2220,7 @@ class GremlinFSOperations(Operations):
     or the corresponding system call man page.
     '''
 
-    logger = GremlinFSLogger.getLogger("GremlinFSOperations")
+    logger = GFSLogger.getLogger("GremlinFSOperations")
 
     def __init__(
         self,
@@ -2914,7 +2914,7 @@ class GremlinFSOperations(Operations):
 
 class GremlinFSCachingOperations(GremlinFSOperations):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSCachingOperations")
+    logger = GFSLogger.getLogger("GremlinFSCachingOperations")
 
     def __init__(
         self,
