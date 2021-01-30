@@ -1,5 +1,6 @@
+
 # 
-# Copyright (c) 2019, John Grundback
+# Copyright (c) 2019, 2020, 2021, John Grundback
 # All rights reserved.
 # 
 
@@ -8,11 +9,11 @@ logging.basicConfig(level=logging.INFO)
 # logging.basicConfig(level=logging.DEBUG)
 
 
-class GremlinFSLogger():
+class GFSLogger():
 
     @classmethod
     def getLogger(self, name):
-        return GremlinFSLogger(name)
+        return GFSLogger(name)
 
     @classmethod
     def getLogLevel(self):
@@ -46,7 +47,7 @@ class GremlinFSLogger():
 
 
 __all__ = [
-    'GremlinFSLogger'
+    'GFSLogger'
 ]
 
-__default__ = 'GremlinFSLogger'
+__default__ = 'GFSLogger'

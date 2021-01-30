@@ -1,5 +1,6 @@
+
 # 
-# Copyright (c) 2019, John Grundback
+# Copyright (c) 2019, 2020, 2021, John Grundback
 # All rights reserved.
 # 
 
@@ -7,30 +8,9 @@
 from __future__ import print_function
 from future.utils import iteritems
 
-# 
-import os
-import sys
-import logging
-import errno
-import stat
-import uuid
-import re
-import traceback
-import string
-
-import contextlib
-
-# 
-from time import time
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 
-
-class GremlinFSObj():
+class GFSObj():
 
     def __init__(self, **kwargs):
 
@@ -96,7 +76,7 @@ class GremlinFSObj():
 
 
 
-class GremlinFSList():
+class GFSList():
 
     def __init__(self, **kwargs):
         self._list = []
@@ -120,7 +100,7 @@ class GremlinFSList():
 
 
 
-class GremlinFSMap(GremlinFSObj):
+class GFSMap(GFSObj):
 
     def __init__(self, **kwargs):
 
@@ -145,24 +125,24 @@ class GremlinFSMap(GremlinFSObj):
 
 
 def gfslist(list = []):
-    gfslist = GremlinFSList()
+    gfslist = GFSList()
     gfslist.fromlist(list)
     return gfslist
 
 
 
 def gfsmap(map = {}):
-    gfsmap = GremlinFSMap()
+    gfsmap = GFSMap()
     gfsmap.frommap(map)
     return gfsmap
 
 
 
 __all__ = [
-    'GremlinFSObj',
-    'GremlinFSList',
+    'GFSObj',
+    'GFSList',
     'gfslist',
     'gfsmap'
 ]
 
-__default__ = 'GremlinFSObj'
+__default__ = 'GFSObj'

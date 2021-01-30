@@ -1,5 +1,6 @@
+
 # 
-# Copyright (c) 2020, John Grundback
+# Copyright (c) 2020, 2021, John Grundback
 # All rights reserved.
 # 
 
@@ -11,7 +12,7 @@ import contextlib
 import addict
 from addict import Dict
 
-from .gremlinfslog import GremlinFSLogger
+from gfs.common.log import GFSLogger
 
 # vertices get, post
 # vertices properties get
@@ -28,16 +29,16 @@ from .gremlinfslog import GremlinFSLogger
 
 
 
-class GremlinFSAPIError(Exception):
+class GFSAPIError(Exception):
 
     def __init__(self, error):
         pass
 
 
 
-class GremlinFSAPI():
+class GFSAPI():
 
-    logger = GremlinFSLogger.getLogger("GremlinFSAPI")
+    logger = GFSLogger.getLogger("GFSAPI")
 
     def __init__(
         self,
@@ -100,7 +101,7 @@ class GremlinFSAPI():
 
         # self.logger.debug(apiurl)
 
-        self.logger.debug(' GremlinFSAPI: apiurl for resource: ' + resource + ': ' + apiurl)
+        self.logger.debug(' GFSAPI: apiurl for resource: ' + resource + ': ' + apiurl)
 
         return apiurl
 
@@ -113,7 +114,7 @@ class GremlinFSAPI():
             url
         )
         if resp.status_code != 200:
-            raise GremlinFSAPIError(
+            raise GFSAPIError(
                 '{} {} {}'.format(
                     "GET",
                     url,
@@ -128,7 +129,7 @@ class GremlinFSAPI():
         url = self.apiurl(
             resource
         )
-        self.logger.debug(' GremlinFSAPI: POSTing to URL: ' + url)
+        self.logger.debug(' GFSAPI: POSTing to URL: ' + url)
         self.logger.debug(data)
         resp = requests.post(
             url,
@@ -136,7 +137,7 @@ class GremlinFSAPI():
         )
         self.logger.debug(resp)
         if resp.status_code != 200:
-            raise GremlinFSAPIError(
+            raise GFSAPIError(
                 '{} {} {}'.format(
                     "POST",
                     url,
@@ -151,7 +152,7 @@ class GremlinFSAPI():
         url = self.apiurl(
             resource
         )
-        self.logger.debug(' GremlinFSAPI: PUTing to URL: ' + url)
+        self.logger.debug(' GFSAPI: PUTing to URL: ' + url)
         self.logger.debug(data)
         resp = requests.put(
             url,
@@ -159,7 +160,7 @@ class GremlinFSAPI():
         )
         self.logger.debug(resp)
         if resp.status_code != 200:
-            raise GremlinFSAPIError(
+            raise GFSAPIError(
                 '{} {} {}'.format(
                     "PUT",
                     url,
@@ -178,7 +179,7 @@ class GremlinFSAPI():
             url
         )
         if resp.status_code != 200:
-            raise GremlinFSAPIError(
+            raise GFSAPIError(
                 '{} {} {}'.format(
                     "PUT",
                     url,
@@ -194,7 +195,7 @@ class GremlinFSAPI():
     #
 
     def query(self, resource, match = {}, fields = []):
-        self.logger.debug(' GremlinFSAPI: query ')
+        self.logger.debug(' GFSAPI: query ')
         properties = match
         if resource:
             properties["label"] = resource
@@ -268,7 +269,7 @@ class GremlinFSAPI():
     #
 
     def vertices(self, vlabel = None, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: vertices ')
+        self.logger.debug(' GFSAPI: vertices ')
         properties = vproperties
         if vlabel:
             properties["label"] = vlabel
@@ -288,7 +289,7 @@ class GremlinFSAPI():
         return data
 
     def verticesWithEdge(self, elabel, elvalue = None):
-        self.logger.debug(' GremlinFSAPI: verticesWithEdge ')
+        self.logger.debug(' GFSAPI: verticesWithEdge ')
         properties = {} # vproperties
         # if elabel:
         #     properties["label"] = elabel
@@ -309,7 +310,7 @@ class GremlinFSAPI():
         return data
 
     def verticesWithoutEdge(self, elabel):
-        self.logger.debug(' GremlinFSAPI: verticesWithoutEdge ')
+        self.logger.debug(' GFSAPI: verticesWithoutEdge ')
         properties = {} # vproperties
         # if elabel:
         #     properties["label"] = elabel
@@ -329,7 +330,7 @@ class GremlinFSAPI():
         return data
 
     def vertex(self, vid = None):
-        self.logger.debug(' GremlinFSAPI: vertex ')
+        self.logger.debug(' GFSAPI: vertex ')
         data = self.json(self.apiget(
             "vertex/" + self.apiid(vid)
         ))
@@ -337,7 +338,7 @@ class GremlinFSAPI():
         return data
 
     def createVertex(self, vlabel = None, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: createVertex ')
+        self.logger.debug(' GFSAPI: createVertex ')
         properties = {
             "properties": vproperties
         }
@@ -358,7 +359,7 @@ class GremlinFSAPI():
         # )
 
     def updateVertex(self, vid, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: updateVertex ')
+        self.logger.debug(' GFSAPI: updateVertex ')
         properties = {
             "properties": vproperties
         }
@@ -377,7 +378,7 @@ class GremlinFSAPI():
         # )
 
     def deleteVertex(self, vid):
-        self.logger.debug(' GremlinFSAPI: deleteVertex ')
+        self.logger.debug(' GFSAPI: deleteVertex ')
         data = self.apidelete(
             "vertex/" + self.apiid(vid)
         )
@@ -385,7 +386,7 @@ class GremlinFSAPI():
         return data
 
     def edges(self, elabel = None, eproperties = {}):
-        self.logger.debug(' GremlinFSAPI: edges ')
+        self.logger.debug(' GFSAPI: edges ')
         properties = eproperties
         if elabel:
             properties["label"] = elabel
@@ -397,7 +398,7 @@ class GremlinFSAPI():
         return data
 
     def edge(self, vid = None):
-        self.logger.debug(' GremlinFSAPI: edge ')
+        self.logger.debug(' GFSAPI: edge ')
         data = self.json(self.apiget(
             "edge/" + self.apiid(vid)
         ))
@@ -405,7 +406,7 @@ class GremlinFSAPI():
         return data
 
     def createEdge(self, svid, tvid, elabel = None, eproperties = {}):
-        self.logger.debug(' GremlinFSAPI: createEdge ')
+        self.logger.debug(' GFSAPI: createEdge ')
         properties = {
             "inVLabel": None,
             "outVLabel": None,
@@ -430,7 +431,7 @@ class GremlinFSAPI():
         # )
 
     def updateEdge(self, eid, eproperties = {}):
-        self.logger.debug(' GremlinFSAPI: updateEdge ')
+        self.logger.debug(' GFSAPI: updateEdge ')
         properties = {
             # "inVLabel": None,
             # "outVLabel": None,
@@ -455,7 +456,7 @@ class GremlinFSAPI():
         # )
 
     def deleteEdge(self, eid):
-        self.logger.debug(' GremlinFSAPI: deleteEdge ')
+        self.logger.debug(' GFSAPI: deleteEdge ')
         data = self.json(self.apidelete(
             "edge/" + self.apiid(eid)
         ))
@@ -463,14 +464,14 @@ class GremlinFSAPI():
         return data
 
     def deleteVertexInEdge(self, vid, elabel, eproperties = {}):
-        self.logger.debug(' GremlinFSAPI: deleteVertexInEdge ')
+        self.logger.debug(' GFSAPI: deleteVertexInEdge ')
 
     def deleteVertexOutEdge(self, vid, elabel, eproperties = {}):
-        self.logger.debug(' GremlinFSAPI: deleteVertexOutEdge ')
+        self.logger.debug(' GFSAPI: deleteVertexOutEdge ')
 
 
     def inEdges(self, vid, elabel = None, eproperties = {}):
-        self.logger.debug(' GremlinFSAPI: inEdges ')
+        self.logger.debug(' GFSAPI: inEdges ')
         properties = eproperties
         if elabel:
             properties["label"] = elabel
@@ -489,7 +490,7 @@ class GremlinFSAPI():
         return data
 
     def outEdges(self, vid, elabel = None, eproperties = {}):
-        self.logger.debug(' GremlinFSAPI: outEdges ')
+        self.logger.debug(' GFSAPI: outEdges ')
         properties = eproperties
         if elabel:
             properties["label"] = elabel
@@ -509,7 +510,7 @@ class GremlinFSAPI():
 
 
     def deleteInEdges(self, vid, elabel = None):
-        self.logger.debug(' GremlinFSAPI: deleteInEdges ')
+        self.logger.debug(' GFSAPI: deleteInEdges ')
         data = self.json(self.apidelete(
             "vertex/" + self.apiid(vid) + "/inedge/" + elabel
         ))
@@ -517,7 +518,7 @@ class GremlinFSAPI():
         return data
 
     def deleteOutEdges(self, vid, elabel = None):
-        self.logger.debug(' GremlinFSAPI: deleteOutEdges ')
+        self.logger.debug(' GFSAPI: deleteOutEdges ')
         data = self.json(self.apidelete(
             "vertex/" + self.apiid(vid) + "/outedge/" + elabel
         ))
@@ -526,7 +527,7 @@ class GremlinFSAPI():
 
 
     def inEdgesInVertices(self, vid, elabel = None, eproperties = {}, vlabel = None, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: inEdgeInVertices ')
+        self.logger.debug(' GFSAPI: inEdgeInVertices ')
 
         data = None
 
@@ -542,7 +543,7 @@ class GremlinFSAPI():
         return data
 
     def inEdgesOutVertices(self, vid, elabel = None, eproperties = {}, vlabel = None, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: inEdgeOutVertices ')
+        self.logger.debug(' GFSAPI: inEdgeOutVertices ')
 
         data = None
 
@@ -558,7 +559,7 @@ class GremlinFSAPI():
         return data
 
     def outEdgesInVertices(self,vid, elabel = None, eproperties = {}, vlabel = None, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: outEdgeInVertices ')
+        self.logger.debug(' GFSAPI: outEdgeInVertices ')
 
         data = None
 
@@ -574,7 +575,7 @@ class GremlinFSAPI():
         return data
 
     def outEdgesOutVertices(self, vid, elabel = None, eproperties = {}, vlabel = None, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: outEdgeOutVertices ')
+        self.logger.debug(' GFSAPI: outEdgeOutVertices ')
 
         data = None
 
@@ -591,7 +592,7 @@ class GremlinFSAPI():
 
 
     def inVertices(self, vid, elabel = None, eproperties = {}):
-        self.logger.debug(' GremlinFSAPI: inVertices ')
+        self.logger.debug(' GFSAPI: inVertices ')
 
         data = None
 
@@ -607,7 +608,7 @@ class GremlinFSAPI():
         return data
 
     def outVertices(self, vid, elabel = None, eproperties = {}):
-        self.logger.debug(' GremlinFSAPI: outVertices ')
+        self.logger.debug(' GFSAPI: outVertices ')
 
         data = None
 
@@ -624,16 +625,16 @@ class GremlinFSAPI():
 
 
     def vertexProperties(self, vid, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: vertexProperties ')
+        self.logger.debug(' GFSAPI: vertexProperties ')
 
     def vertexProperty(self, vid, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: vertexProperty ')
+        self.logger.debug(' GFSAPI: vertexProperty ')
 
     def setVertexProperties(self, vid, vproperties = {}):
-        self.logger.debug(' GremlinFSAPI: setVertexProperties ')
+        self.logger.debug(' GFSAPI: setVertexProperties ')
 
     def setVertexProperty(self, vid, name, value):
-        self.logger.debug(' GremlinFSAPI: setVertexProperty ')
+        self.logger.debug(' GFSAPI: setVertexProperty ')
         data = self.json(self.apiput(
             "vertex/" + self.apiid(vid) + "/property/" + name, {
                 "@type": "g:VertexProperty",
@@ -648,7 +649,7 @@ class GremlinFSAPI():
         return data
 
     def unsetVertexProperty(self, vid, name):
-        self.logger.debug(' GremlinFSAPI: unsetVertexProperty ')
+        self.logger.debug(' GFSAPI: unsetVertexProperty ')
         data = self.json(self.apidelete(
             "vertex/" + self.apiid(vid) + "/property/" + name
         ))
@@ -657,22 +658,22 @@ class GremlinFSAPI():
 
 
     def context(self, vid):
-        self.logger.debug(' GremlinFSAPI: context ')
+        self.logger.debug(' GFSAPI: context ')
         return self.json(self.apiget(
             "context/" + self.apiid(vid)
         ))
 
     def render(self, vid):
-        self.logger.debug(' GremlinFSAPI: render ')
+        self.logger.debug(' GFSAPI: render ')
         return self.apiget(
             "render/" + self.apiid(vid)
         )
 
 
 
-class GremlinFSCachingAPI(GremlinFSAPI):
+class GFSCachingAPI(GFSAPI):
 
-    logger = GremlinFSLogger.getLogger("GremlinFSCachingAPI")
+    logger = GFSLogger.getLogger("GFSCachingAPI")
 
     def __init__(
         self,
@@ -837,7 +838,7 @@ class GremlinFSCachingAPI(GremlinFSAPI):
 
         # if resp.status_code != 200:
         if data.get("status", 0) != 200:
-            raise GremlinFSAPIError(
+            raise GFSAPIError(
                 '{} {} {}'.format(
                     "GET",
                     url,

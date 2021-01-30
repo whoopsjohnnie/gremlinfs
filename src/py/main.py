@@ -1,4 +1,9 @@
 
+# 
+# Copyright (c) 2021, John Grundback
+# All rights reserved.
+# 
+
 #!python
 
 import os
@@ -11,13 +16,13 @@ from fuse import Operations
 from fuse import FuseOSError
 
 # 
-# from gremlinfs.gremlinfs import GremlinFSLogger
+# from gfs.gfso import GFSLogger
 
-from gremlinfs.gremlinfslog import GremlinFSLogger
-from gremlinfs.gremlinfslib import GremlinFS
+from gfs.common.log import GFSLogger
+from gfs.gfs import GremlinFS
 
-from gremlinfs.gremlinfs import GremlinFSOperations
-# from gremlinfs.gremlinfs import GremlinFSCachingOperations
+from gfs.gfso import GremlinFSOperations
+# from gfs.gfso import GremlinFSCachingOperations
 
 logging.basicConfig(level=logging.INFO)
 # logging.basicConfig(level=logging.DEBUG)
@@ -37,7 +42,7 @@ def main(
 
     try:
 
-        logger = GremlinFSLogger.getLogger("main")
+        logger = GFSLogger.getLogger("main")
 
         gfs = GremlinFS()
         gfs.configure(
