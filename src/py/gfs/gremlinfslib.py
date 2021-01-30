@@ -40,50 +40,21 @@ except ImportError:
 # import pika
 
 # 
-from .common.log import GFSLogger
-from .common.obj import GFSObj
+from gfs.common.log import GFSLogger
+from gfs.common.obj import GFSObj
 
-# from .api.common.api import GFSAPI
-from .api.common.api import GFSCachingAPI
+from gfs.error.error import GremlinFSError
+from gfs.error.error import GremlinFSExistsError
+from gfs.error.error import GremlinFSNotExistsError
+from gfs.error.error import GremlinFSIsFileError
+from gfs.error.error import GremlinFSIsFolderError
+
+# from gfs.api.common.api import GFSAPI
+from gfs.api.common.api import GFSCachingAPI
 
 # 
 # 
 # import config
-
-
-
-class GremlinFSError(Exception):
-
-    def __init__(self, path = None):
-        self.path = path
-
-
-
-class GremlinFSExistsError(GremlinFSError):
-
-    def __init__(self, path = None):
-        self.path = path
-
-
-
-class GremlinFSNotExistsError(GremlinFSError):
-
-    def __init__(self, path = None):
-        self.path = path
-
-
-
-class GremlinFSIsFileError(GremlinFSError):
-
-    def __init__(self, path = None):
-        self.path = path
-
-
-
-class GremlinFSIsFolderError(GremlinFSError):
-
-    def __init__(self, path = None):
-        self.path = path
 
 
 
