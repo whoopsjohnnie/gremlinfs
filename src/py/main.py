@@ -1,4 +1,9 @@
 
+# 
+# Copyright (c) 2021, John Grundback
+# All rights reserved.
+# 
+
 #!python
 
 import os
