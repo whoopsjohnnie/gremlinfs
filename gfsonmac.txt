@@ -17,5 +17,4 @@
 > cd src/py
 
 # > export FUSE_LIBRARY_PATH=/usr/local/lib/libfuse.dylib
-# > FUSE_LIBRARY_PATH=/usr/local/lib/libfuse.dylib python ./main.py /tmp/data localhost 5000
-> FUSE_LIBRARY_PATH=/usr/local/lib/libfuse.dylib python ./main.py /tmp/data controller 5000
+> FUSE_LIBRARY_PATH=/usr/local/lib/libfuse.dylib python ./main.py /tmp/data gfsapi 5000

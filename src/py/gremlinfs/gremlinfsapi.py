@@ -83,6 +83,11 @@ class GremlinFSAPI():
 
         return json.loads(data)
 
+    def apiid(self, resourceid):
+        if resourceid and type(resourceid) == str:
+            return str(resourceid.replace("#", ""))
+        return str(resourceid)
+
     def apiurl(self, resource, properties = {}):
 
         apiurl = "http://" + self.gfs_host + ":" + self.gfs_port + "/" + self.api_version + "/" + self.api_namespace + "/" + resource
@@ -208,14 +213,14 @@ class GremlinFSAPI():
     def get(self, resource, resourceid, property = None, fields = []):
         if property:
             data = self.apiget(
-                "vertex/" + resourceid.replace("#", "") + "/property/" + property
+                "vertex/" + self.apiid(resourceid) + "/property/" + property
             )
 
             return data.get("@value", {}).get("value").replace("\"", "")
 
         else:
             data = self.apiget(
-                "vertex/" + resourceid.replace("#", "")
+                "vertex/" + self.apiid(resourceid)
             )
 
             return {
@@ -234,7 +239,7 @@ class GremlinFSAPI():
     def set(self, resource, resourceid, property, value):
         if property:
             data = self.apiput(
-                "vertex/" + resourceid.replace("#", "") + "/property/" + property,
+                "vertex/" + self.apiid(resourceid) + "/property/" + property,
                 data = {
                     "@type": "g:VertexProperty",
                     "@value": {
@@ -250,7 +255,7 @@ class GremlinFSAPI():
         if property:
             try:
                 self.apidelete(
-                    "vertex/" + resourceid.replace("#", "") + "/property/" + property
+                    "vertex/" + self.apiid(resourceid) + "/property/" + property
                 )
 
             except Exception as e:
@@ -293,8 +298,8 @@ class GremlinFSAPI():
         # 404 throws exception above
         try:
             data = self.json(self.apiget(
-                # "vertex/" + elvalue.replace("#", "") + "/outedge/" + elabel + "/invertex",
-                "vertex/" + elvalue.replace("#", "") + "/inedge/" + elabel + "/outvertex",
+                # "vertex/" + self.apiid(elvalue) + "/outedge/" + elabel + "/invertex",
+                "vertex/" + self.apiid(elvalue) + "/inedge/" + elabel + "/outvertex",
                 properties
             ))
 
@@ -326,7 +331,7 @@ class GremlinFSAPI():
     def vertex(self, vid = None):
         self.logger.debug(' GremlinFSAPI: vertex ')
         data = self.json(self.apiget(
-            "vertex/" + vid.replace("#", "")
+            "vertex/" + self.apiid(vid)
         ))
 
         return data
@@ -358,7 +363,7 @@ class GremlinFSAPI():
             "properties": vproperties
         }
         data = self.json(self.apiput(
-            "vertex/" + vid.replace("#", ""), {
+            "vertex/" + self.apiid(vid), {
                 "@type": "g:Vertex",
                 "@value": properties
             }
@@ -374,7 +379,7 @@ class GremlinFSAPI():
     def deleteVertex(self, vid):
         self.logger.debug(' GremlinFSAPI: deleteVertex ')
         data = self.apidelete(
-            "vertex/" + vid.replace("#", "")
+            "vertex/" + self.apiid(vid)
         )
 
         return data
@@ -394,7 +399,7 @@ class GremlinFSAPI():
     def edge(self, vid = None):
         self.logger.debug(' GremlinFSAPI: edge ')
         data = self.json(self.apiget(
-            "edge/" + vid.replace("#", "")
+            "edge/" + self.apiid(vid)
         ))
 
         return data
@@ -436,7 +441,7 @@ class GremlinFSAPI():
         # if elabel:
         #     properties["label"] = elabel
         data = self.json(self.apiput(
-            "edge/" + eid.replace("#", ""), {
+            "edge/" + self.apiid(eid), {
                 "@type": "g:Edge",
                 "@value": properties
             }
@@ -452,7 +457,7 @@ class GremlinFSAPI():
     def deleteEdge(self, eid):
         self.logger.debug(' GremlinFSAPI: deleteEdge ')
         data = self.json(self.apidelete(
-            "edge/" + eid.replace("#", "")
+            "edge/" + self.apiid(eid)
         ))
 
         return data
@@ -475,7 +480,7 @@ class GremlinFSAPI():
         # 404 throws exception above
         try:
             data = self.json(self.apiget(
-                "vertex/" + vid.replace("#", "") + "/inedge/" + elabel
+                "vertex/" + self.apiid(vid) + "/inedge/" + elabel
             ))
 
         except Exception as e:
@@ -494,7 +499,7 @@ class GremlinFSAPI():
         # 404 throws exception above
         try:
             data = self.json(self.apiget(
-                "vertex/" + vid.replace("#", "") + "/outedge/" + elabel
+                "vertex/" + self.apiid(vid) + "/outedge/" + elabel
             ))
 
         except Exception as e:
@@ -506,7 +511,7 @@ class GremlinFSAPI():
     def deleteInEdges(self, vid, elabel = None):
         self.logger.debug(' GremlinFSAPI: deleteInEdges ')
         data = self.json(self.apidelete(
-            "vertex/" + vid.replace("#", "") + "/inedge/" + elabel
+            "vertex/" + self.apiid(vid) + "/inedge/" + elabel
         ))
 
         return data
@@ -514,7 +519,7 @@ class GremlinFSAPI():
     def deleteOutEdges(self, vid, elabel = None):
         self.logger.debug(' GremlinFSAPI: deleteOutEdges ')
         data = self.json(self.apidelete(
-            "vertex/" + vid.replace("#", "") + "/outedge/" + elabel
+            "vertex/" + self.apiid(vid) + "/outedge/" + elabel
         ))
 
         return data
@@ -528,7 +533,7 @@ class GremlinFSAPI():
         # 404 throws exception above
         try:
             data = self.json(self.apiget(
-                "vertex/" + vid.replace("#", "") + "/inedge/" + elabel + "/invertex"
+                "vertex/" + self.apiid(vid) + "/inedge/" + elabel + "/invertex"
             ))
 
         except Exception as e:
@@ -544,7 +549,7 @@ class GremlinFSAPI():
         # 404 throws exception above
         try:
             data = self.json(self.apiget(
-                "vertex/" + vid.replace("#", "") + "/inedge/" + elabel + "/outvertex"
+                "vertex/" + self.apiid(vid) + "/inedge/" + elabel + "/outvertex"
             ))
 
         except Exception as e:
@@ -560,7 +565,7 @@ class GremlinFSAPI():
         # 404 throws exception above
         try:
             data = self.json(self.apiget(
-                "vertex/" + vid.replace("#", "") + "/outedge/" + elabel + "/invertex"
+                "vertex/" + self.apiid(vid) + "/outedge/" + elabel + "/invertex"
             ))
 
         except Exception as e:
@@ -576,7 +581,7 @@ class GremlinFSAPI():
         # 404 throws exception above
         try:
             data = self.json(self.apiget(
-                "vertex/" + vid.replace("#", "") + "/outedge/" + elabel + "/outvertex"
+                "vertex/" + self.apiid(vid) + "/outedge/" + elabel + "/outvertex"
             ))
 
         except Exception as e:
@@ -593,7 +598,7 @@ class GremlinFSAPI():
         # 404 throws exception above
         try:
             data = self.json(self.apiget(
-                "vertex/" + vid.replace("#", "") + "/edge/" + elabel + "/invertex"
+                "vertex/" + self.apiid(vid) + "/edge/" + elabel + "/invertex"
             ))
 
         except Exception as e:
@@ -609,7 +614,7 @@ class GremlinFSAPI():
         # 404 throws exception above
         try:
             data = self.json(self.apiget(
-                "vertex/" + vid.replace("#", "") + "/edge/" + elabel + "/outvertex"
+                "vertex/" + self.apiid(vid) + "/edge/" + elabel + "/outvertex"
             ))
 
         except Exception as e:
@@ -630,7 +635,7 @@ class GremlinFSAPI():
     def setVertexProperty(self, vid, name, value):
         self.logger.debug(' GremlinFSAPI: setVertexProperty ')
         data = self.json(self.apiput(
-            "vertex/" + vid.replace("#", "") + "/property/" + name, {
+            "vertex/" + self.apiid(vid) + "/property/" + name, {
                 "@type": "g:VertexProperty",
                 "@value": {
                     # "id": vid + "_" + name,
@@ -645,7 +650,7 @@ class GremlinFSAPI():
     def unsetVertexProperty(self, vid, name):
         self.logger.debug(' GremlinFSAPI: unsetVertexProperty ')
         data = self.json(self.apidelete(
-            "vertex/" + vid.replace("#", "") + "/property/" + name
+            "vertex/" + self.apiid(vid) + "/property/" + name
         ))
 
         return data
@@ -654,13 +659,13 @@ class GremlinFSAPI():
     def context(self, vid):
         self.logger.debug(' GremlinFSAPI: context ')
         return self.json(self.apiget(
-            "context/" + vid.replace("#", "")
+            "context/" + self.apiid(vid)
         ))
 
     def render(self, vid):
         self.logger.debug(' GremlinFSAPI: render ')
         return self.apiget(
-            "render/" + vid.replace("#", "")
+            "render/" + self.apiid(vid)
         )
 
 

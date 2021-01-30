@@ -116,45 +116,48 @@ class GremlinFSNode(GremlinFSBase):
 
     @classmethod
     def label(clazz, name, label, fstype = "file", default = "vertex"):
+        # if not name:
+        #     return default
+        # if not label:
+        #     return default
+        # for label_config in GremlinFS.operations().config("labels", []):
+        #     if "type" in label_config and label_config["type"] == fstype:
+        #         compiled = None
+        #         if "compiled" in label_config:
+        #             compiled = label_config["compiled"]
+        #         else:
+        #             compiled = GremlinFS.operations().utils().recompile(label_config["pattern"])
+        # 
+        #         if compiled:
+        #             if compiled.search(name):
+        #                 label = label_config.get("label", default)
+        #                 break
+        # 
         return label
 
     @classmethod
     def vals(clazz, invals):
         if not invals:
             return {}
+
         vals = {}
-        for key, val in invals.items():
-            vals[key] = val
+        vals["id"] = GremlinFSUtils.value( invals.get("id") )
+        vals["label"] = GremlinFSUtils.value( invals.get("label") )
+        for key, val in invals.get("properties").items():
+            vals[key] = GremlinFSUtils.value( val )
+
         return vals
 
     @classmethod
     def fromMap(clazz, map):
-        vals = {}
-        vals["id"] = map.get("@value", {}).get("id", None)
-        vals["label"] = map.get("@value", {}).get("label", None)
-        properties = map.get("@value", {}).get("properties", {})
-        for key in properties:
-            value = properties.get(key)
-            if "@value" in value:
-                vals[key] = value.get("@value", None)
-            else:
-                vals[key] = value
+        vals = clazz.vals(map.get("@value"))
         return clazz(**vals)
 
     @classmethod
     def fromMaps(clazz, maps):
         nodes = []
         for map in maps:
-            vals = {}
-            vals["id"] = map.get("@value", {}).get("id", None)
-            vals["label"] = map.get("@value", {}).get("label", None)
-            properties = map.get("@value", {}).get("properties", {})
-            for key in properties:
-                value = properties.get(key)
-                if "@value" in value:
-                    vals[key] = value.get("@value", None)
-                else:
-                    vals[key] = value
+            vals = clazz.vals(map.get("@value"))
             nodes.append(clazz(**vals))
         return nodes
 
@@ -574,43 +577,31 @@ class GremlinFSVertex(GremlinFSNode):
 
         return None
 
-    # @classmethod
-    # def fromV(clazz, v, names = []):
-    #     return GremlinFSVertex.fromMap(
-    #         v
-    #     )
-
-    # @classmethod
-    # def fromVs(clazz, vs, names = []):
-    #     return GremlinFSVertex.fromMaps(
-    #         vs
-    #     )
-
     @classmethod
-    def fromV(clazz, v):
-        obj = v
-        # if v and type(v) in (tuple, list):
-        if type(v) in (tuple, list):
-            if not v:
-                return None
-            obj = v[0]
-        vertex = GremlinFSVertex.fromMap(
-            obj
-        )
-        return vertex
-
-    @classmethod
-    def fromVs(clazz, vs):
-        if not vs:
-            return []
-        vertices = []
-        objs2 = vs
-        for obj in objs2:
-            vertex = GremlinFSVertex.fromMap(
-                obj
+    def fromV(clazz, v, names = []):
+        if names:
+            # return GremlinFSVertex.fromVal(
+            return GremlinFSVertex.fromMap(
+                v # .valueMap(*names).next()
             )
-            vertices.append(vertex)
-        return vertices # .tolist()
+
+        else:
+            return GremlinFSVertex.fromMap(
+                v # .valueMap(True).next()
+            )
+
+    @classmethod
+    def fromVs(clazz, vs, names = []):
+        if names:
+            # return GremlinFSVertex.fromVals(
+            return GremlinFSVertex.fromMaps(
+                vs # .valueMap(*names).toList()
+            )
+
+        else:
+            return GremlinFSVertex.fromMaps(
+                vs # .valueMap(True).toList()
+            )
 
     def edges(self, edgeid = None, ine = True):
 
@@ -1495,35 +1486,68 @@ class GremlinFSEdge(GremlinFSNode):
 
         return None
 
+#     @classmethod
+#     def fromMap(clazz, map):
+#         node = GremlinFSEdge()
+#         node.fromobj(map)
+#         return node
+# 
+#     @classmethod
+#     def fromMaps(clazz, maps):
+#         nodes = gfslist([])
+#         for map in maps:
+#             node = GremlinFSEdge()
+#             node.fromobj(map)
+#             nodes.append(node)
+#         return nodes.tolist()
+
+#     @classmethod
+#     def fromE(clazz, e):
+#         return GremlinFSEdge.fromMap(
+#             e.valueMap(True).next()
+#         )
+# 
+#     @classmethod
+#     def fromEs(clazz, es):
+#         return GremlinFSEdge.fromMaps(
+#             es.valueMap(True).toList()
+#         )
+
     @classmethod
     def fromE(clazz, e):
-        obj = e
-        # if e and type(e) in (tuple, list):
-        if type(e) in (tuple, list):
-            if not e:
-                return None
-            obj = e[0]
-        edge = GremlinFSEdge()
-        edge.set('id', obj.get("@value", {}).get("id"))
-        edge.set('label', obj.get("@value", {}).get("label"))
-        edge.set('outV', obj.get("@value", {}).get("outV"))
-        edge.set('inV', obj.get("@value", {}).get("inV"))
-        return edge
+        # var clazz;
+        # clazz = this;
+        obj = e.next();
+        # if obj and obj['value']:
+        #     obj = obj['value']
+
+        edge = GremlinFSEdge();
+        edge.set('id', GremlinFSUtils.value( obj.id ) );
+        edge.set('label', obj.label);
+        edge.set('outV', GremlinFSUtils.value( obj.outV.id ) );
+        # edge.set('outVLabel', obj.outV.label);
+        edge.set('inV', GremlinFSUtils.value( obj.inV.id ) );
+        # edge.set('inVLabel', obj.inV.label);
+        return edge;
 
     @classmethod
     def fromEs(clazz, es):
-        if not es:
-            return []
-        edges = []
-        objs2 = es
+        # var clazz;
+        # clazz = this;
+        edges = gfslist([]);
+        objs2 = es.toList();
+        # for( var i=0; i<objs2.length; i++ ) {
+        #     var obj = objs2[i];
         for obj in objs2:
-            edge = GremlinFSEdge()
-            edge.set('id', obj.get("@value", {}).get("id"))
-            edge.set('label', obj.get("@value", {}).get("label"))
-            edge.set('outV', obj.get("@value", {}).get("outV"))
-            edge.set('inV', obj.get("@value", {}).get("inV"))
-            edges.append(edge)
-        return edges # .tolist()
+            edge = GremlinFSEdge();
+            edge.set('id', GremlinFSUtils.value( obj.id ) );
+            edge.set('label', obj.label);
+            edge.set('outV', GremlinFSUtils.value( obj.outV.id ) );
+            # edge.set('outVLabel', obj.outV.label);
+            edge.set('inV', GremlinFSUtils.value( obj.inV.id ) );
+            # edge.set('inVLabel', obj.inV.label);
+            edges.append(edge);
+        return edges.tolist();
 
     def node(self, inv = True):
 
@@ -1575,6 +1599,25 @@ class GremlinFSEdge(GremlinFSNode):
 class GremlinFSUtils(GremlinFSBase):
 
     logger = GremlinFSLogger.getLogger("GremlinFSUtils")
+
+    @classmethod
+    def value(clazz, value, default = None):
+
+        # if value and "@value" in value:
+        if value and type(value) == dict and "@value" in value:
+            return value["@value"]
+
+        elif type(value) in (tuple, list):
+            return value[0]
+
+        # Check truthy, int value 0 is False, but defined
+        # hence can't check simple if
+        # elif value:
+        elif value is not None:
+            return value
+
+        else:
+            return default
 
     # TODO, remove?
     # clean up config and let be dict that we pass in
