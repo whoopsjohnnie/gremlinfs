@@ -50,8 +50,8 @@ from fuse import FuseOSError
 from .common.log import GremlinFSLogger
 from .common.obj import GremlinFSObj
 
-# from .gremlinfsapi import GremlinFSAPI
-# from .gremlinfsapi import GremlinFSCachingAPI
+# from .api.common.api import GremlinFSAPI
+# from .api.common.api import GremlinFSCachingAPI
 
 from .gremlinfslib import GremlinFS
 from .gremlinfslib import GremlinFSBase
