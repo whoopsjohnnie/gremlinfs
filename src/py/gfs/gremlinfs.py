@@ -50,8 +50,8 @@ from fuse import FuseOSError
 from .common.log import GremlinFSLogger
 from .common.obj import GremlinFSObj
 
-# from .api.common.api import GremlinFSAPI
-# from .api.common.api import GremlinFSCachingAPI
+# from .api.common.api import GFSAPI
+# from .api.common.api import GFSCachingAPI
 
 from .gremlinfslib import GremlinFS
 from .gremlinfslib import GremlinFSBase
@@ -2274,7 +2274,7 @@ class GremlinFSOperations(Operations):
 
         # )
 
-        # self._api = GremlinFSAPI(
+        # self._api = GFSAPI(
         #     gfs_host = gfs_host,
         #     gfs_port = gfs_port,
         #     gfs_username = gfs_username,

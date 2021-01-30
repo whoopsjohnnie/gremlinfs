@@ -43,8 +43,8 @@ except ImportError:
 from .common.log import GremlinFSLogger
 from .common.obj import GremlinFSObj
 
-# from .api.common.api import GremlinFSAPI
-from .api.common.api import GremlinFSCachingAPI
+# from .api.common.api import GFSAPI
+from .api.common.api import GFSCachingAPI
 
 # 
 # 
@@ -2021,8 +2021,8 @@ class GremlinFS():
 
         )
 
-        # self._api = GremlinFSAPI(
-        self._api = GremlinFSCachingAPI(
+        # self._api = GFSAPI(
+        self._api = GFSCachingAPI(
             gfs_host = gfs_host,
             gfs_port = gfs_port,
             gfs_username = gfs_username,
