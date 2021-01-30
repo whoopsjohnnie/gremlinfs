@@ -44,11 +44,11 @@ from gfs.common.log import GFSLogger
 from gfs.common.obj import GFSObj
 from gfs.common.base import GFSBase
 
-from gfs.error.error import GremlinFSError
-from gfs.error.error import GremlinFSExistsError
-from gfs.error.error import GremlinFSNotExistsError
-from gfs.error.error import GremlinFSIsFileError
-from gfs.error.error import GremlinFSIsFolderError
+from gfs.error.error import GFSError
+from gfs.error.error import GFSExistsError
+from gfs.error.error import GFSNotExistsError
+from gfs.error.error import GFSIsFileError
+from gfs.error.error import GFSIsFolderError
 
 # from gfs.api.common.api import GFSAPI
 from gfs.api.common.api import GFSCachingAPI
@@ -709,9 +709,9 @@ class GremlinFSVertex(GremlinFSNode):
         node = self
 
         if not node:
-            raise GremlinFSNotExistsError(self)
+            raise GFSNotExistsError(self)
         if not self.isFolder():
-            raise GremlinFSNotExistsError(self)
+            raise GFSNotExistsError(self)
         return node
 
     def isFile(self):
@@ -731,11 +731,11 @@ class GremlinFSVertex(GremlinFSNode):
         node = self
 
         if not node:
-            raise GremlinFSNotExistsError(self)
+            raise GFSNotExistsError(self)
         if self.isFolder():
-            raise GremlinFSIsFolderError(self)
+            raise GFSIsFolderError(self)
         elif not self.isFile():
-            raise GremlinFSNotExistsError(self)
+            raise GFSNotExistsError(self)
         return node
 
     def create(self):

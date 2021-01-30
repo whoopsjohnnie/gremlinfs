@@ -44,11 +44,11 @@ from gfs.common.log import GFSLogger
 from gfs.common.obj import GFSObj
 from gfs.common.base import GFSBase
 
-from gfs.error.error import GremlinFSError
-from gfs.error.error import GremlinFSExistsError
-from gfs.error.error import GremlinFSNotExistsError
-from gfs.error.error import GremlinFSIsFileError
-from gfs.error.error import GremlinFSIsFolderError
+from gfs.error.error import GFSError
+from gfs.error.error import GFSExistsError
+from gfs.error.error import GFSNotExistsError
+from gfs.error.error import GFSIsFileError
+from gfs.error.error import GFSIsFolderError
 
 from gfs.model.vertex import GremlinFSVertex
 from gfs.model.edge import GremlinFSEdge
@@ -95,12 +95,12 @@ class GremlinFSUtils(GFSBase):
     @classmethod
     def missing(clazz, value):
         if value:
-            raise GremlinFSExistsError()
+            raise GFSExistsError()
 
     @classmethod
     def found(clazz, value):
         if not value:
-            raise GremlinFSNotExistsError()
+            raise GFSNotExistsError()
         return value
 
     @classmethod
@@ -417,7 +417,7 @@ class GremlinFS():
 
     '''
     This class should be subclassed and passed as an argument to FUSE on
-    initialization. All operations should raise a GremlinFSError exception on
+    initialization. All operations should raise a GFSError exception on
     error.
 
     When in doubt of what an operation should do, check the FUSE header file

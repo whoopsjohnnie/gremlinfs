@@ -44,11 +44,11 @@ from gfs.common.log import GFSLogger
 from gfs.common.obj import GFSObj
 from gfs.common.base import GFSBase
 
-from gfs.error.error import GremlinFSError
-from gfs.error.error import GremlinFSExistsError
-from gfs.error.error import GremlinFSNotExistsError
-from gfs.error.error import GremlinFSIsFileError
-from gfs.error.error import GremlinFSIsFolderError
+from gfs.error.error import GFSError
+from gfs.error.error import GFSExistsError
+from gfs.error.error import GFSNotExistsError
+from gfs.error.error import GFSIsFileError
+from gfs.error.error import GFSIsFolderError
 
 # from gfs.api.common.api import GFSAPI
 from gfs.api.common.api import GFSCachingAPI

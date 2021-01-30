@@ -52,35 +52,35 @@ from .api.common.api import GFSCachingAPI
 
 
 
-class GremlinFSError(Exception):
+class GFSError(Exception):
 
     def __init__(self, path = None):
         self.path = path
 
 
 
-class GremlinFSExistsError(GremlinFSError):
+class GFSExistsError(GFSError):
 
     def __init__(self, path = None):
         self.path = path
 
 
 
-class GremlinFSNotExistsError(GremlinFSError):
+class GFSNotExistsError(GFSError):
 
     def __init__(self, path = None):
         self.path = path
 
 
 
-class GremlinFSIsFileError(GremlinFSError):
+class GFSIsFileError(GFSError):
 
     def __init__(self, path = None):
         self.path = path
 
 
 
-class GremlinFSIsFolderError(GremlinFSError):
+class GFSIsFolderError(GFSError):
 
     def __init__(self, path = None):
         self.path = path
