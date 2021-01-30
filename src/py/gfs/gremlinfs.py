@@ -54,7 +54,7 @@ from gfs.common.obj import GFSObj
 # from gfs.api.common.api import GFSCachingAPI
 
 from gfs.gremlinfslib import GremlinFS
-from gfs.gremlinfslib import GremlinFSBase
+from gfs.gremlinfslib import GFSBase
 from gfs.gremlinfslib import GremlinFSUtils
 from gfs.gremlinfslib import GremlinFSConfig
 
@@ -73,7 +73,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 
-class GremlinFSPath(GremlinFSBase):
+class GremlinFSPath(GFSBase):
 
     logger = GFSLogger.getLogger("GremlinFSPath")
 

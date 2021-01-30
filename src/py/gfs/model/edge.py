@@ -42,7 +42,7 @@ except ImportError:
 # 
 from gfs.common.log import GFSLogger
 from gfs.common.obj import GFSObj
-from gfs.common.base import GremlinFSBase
+from gfs.common.base import GFSBase
 
 from gfs.error.error import GremlinFSError
 from gfs.error.error import GremlinFSExistsError

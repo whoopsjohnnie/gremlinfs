@@ -42,7 +42,7 @@ except ImportError:
 # 
 from gfs.common.log import GFSLogger
 from gfs.common.obj import GFSObj
-from gfs.common.base import GremlinFSBase
+from gfs.common.base import GFSBase
 
 from gfs.error.error import GremlinFSError
 from gfs.error.error import GremlinFSExistsError
@@ -62,7 +62,7 @@ from gfs.api.common.api import GFSCachingAPI
 
 
 
-class GremlinFSUtils(GremlinFSBase):
+class GremlinFSUtils(GFSBase):
 
     logger = GFSLogger.getLogger("GremlinFSUtils")
 
@@ -332,7 +332,7 @@ class GremlinFSUtils(GremlinFSBase):
 
 
 
-class GremlinFSEvent(GremlinFSBase):
+class GremlinFSEvent(GFSBase):
 
     logger = GFSLogger.getLogger("GremlinFSEvent")
 
@@ -344,7 +344,7 @@ class GremlinFSEvent(GremlinFSBase):
 
 
 
-class GremlinFSConfig(GremlinFSBase):
+class GremlinFSConfig(GFSBase):
 
     logger = GFSLogger.getLogger("GremlinFSConfig")
 

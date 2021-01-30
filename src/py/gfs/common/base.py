@@ -58,9 +58,9 @@ from gfs.api.common.api import GFSCachingAPI
 
 
 
-class GremlinFSBase(GFSObj):
+class GFSBase(GFSObj):
 
-    logger = GFSLogger.getLogger("GremlinFSBase")
+    logger = GFSLogger.getLogger("GFSBase")
 
     def __init__(self, **kwargs):
         self.setall(kwargs)
