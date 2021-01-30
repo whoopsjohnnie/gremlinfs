@@ -7,27 +7,6 @@
 from __future__ import print_function
 from future.utils import iteritems
 
-# 
-import os
-import sys
-import logging
-import errno
-import stat
-import uuid
-import re
-import traceback
-import string
-
-import contextlib
-
-# 
-from time import time
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-
 
 
 class GFSObj():
